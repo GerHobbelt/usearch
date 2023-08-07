@@ -32,23 +32,6 @@ jobs:
     - uses: actions/setup-go@v4
     - run: git submodule update --init --recursive
     - run: cd golang && make -C ${{ matrix.directories }} build && mv ${{ matrix.directories }}/libusearch.a libusearch.a && go test -v
-
-  publish_golang_arm64:
-    name: Publish Go Binary (arm64)
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        goos: [linux]
-        goarch: [arm64]
-        directories:
-          - ../c
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: 'main-dev'
-      - uses: actions/setup-go@v4
-      - run: git submodule update --init --recursive
-      - run: cd golang && make -C ${{ matrix.directories }} build && mv ${{ matrix.directories }}/libusearch.a libusearch.a && go test -v
         
 
   # test_cpp:
