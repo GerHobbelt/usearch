@@ -18,7 +18,7 @@ permissions:
 jobs:
   publish_golang:
     name: Publish Go Binary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu:22.04
     strategy:
       matrix:
         # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
@@ -34,10 +34,10 @@ jobs:
       with:
         ref: 'main-dev'  
     - run: git submodule update --init --recursive
-    - run: |
-        # mkdir golang/c
-        cp -r ./c/* golang/
-        sed -i 's/libusearch\.so/libusearch.a/g' golang/Makefile
+    # - run: |
+    #     # mkdir golang/c
+    #     cp -r ./c/* golang/
+    #     sed -i 's/libusearch\.so/libusearch.a/g' golang/Makefile
     - uses: wangyoucao577/go-release-action@v1
       with:
         pre_command: "apt-get update && apt-get install -y g++-12 build-essential libjemalloc-dev python3 python3-pip && pip3 install --upgrade pip setuptools && pip3 install cmake && cmake -B ./build_release -DCMAKE_BUILD_TYPE=Release -DUSEARCH_BUILD_TEST=1 -DUSEARCH_USE_OPENMP=1 -DUSEARCH_USE_SIMSIMD=1 -DUSEARCH_USE_JEMALLOC=1 -DUSEARCH_BUILD_BENCHMARK=1 && make -C ./build_release -j"
