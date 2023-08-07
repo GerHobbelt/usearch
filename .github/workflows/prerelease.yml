@@ -19,6 +19,9 @@ jobs:
   publish_golang:
     name: Publish Go Binary
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+         goos: [linux]
     steps:
     - uses: actions/checkout@v3
       with:
