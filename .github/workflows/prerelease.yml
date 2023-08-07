@@ -35,8 +35,8 @@ jobs:
         ref: 'main'  
     - run: git submodule update --init --recursive
     - run: |
-        mkdir golang/c
-        cp -r ./c/* golang/c/
+        # mkdir golang/c
+        cp -r ./c/* golang/
     - uses: wangyoucao577/go-release-action@v1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
