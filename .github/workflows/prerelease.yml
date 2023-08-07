@@ -18,7 +18,7 @@ permissions:
 jobs:
   publish_golang:
     name: Publish Go Binary
-    runs-on: ubuntu:22.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
