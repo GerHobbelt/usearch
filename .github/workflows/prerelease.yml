@@ -42,7 +42,7 @@ jobs:
       with:
         pre_command: |
           apt-get update && apt-get install -y cmake g++-12 build-essential libjemalloc-dev
-          cmake -B./build_release \  # Removed the space here
+          cmake -B ./build_release \
             -DCMAKE_CXX_COMPILER="g++-12" \
             -DCMAKE_BUILD_TYPE=Release \
             -DUSEARCH_BUILD_TEST=1 \
