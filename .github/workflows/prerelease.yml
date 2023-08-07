@@ -25,7 +25,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        ref: 'main-dev'  
+        ref: 'main-dev'
+    - uses: actions/setup-go@v4
     - run: git submodule update --init --recursive
     - run: cd golang && make -C ../c build && mv ../c/libusearch.a libusearch.a && go test -v
         
