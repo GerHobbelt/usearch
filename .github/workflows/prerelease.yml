@@ -16,35 +16,15 @@ permissions:
   contents: read
 
 jobs:
-
   publish_golang:
     name: Publish Go Binary
     runs-on: ubuntu-latest
-    # strategy:
-    #   matrix:
-        # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
-        # goos: [linux]
-        # goarch: [arm64]
-        # exclude:
-        #   - goarch: "386"
-        #     goos: darwin
-        #   - goarch: arm64
-        #     goos: windows
     steps:
     - uses: actions/checkout@v3
       with:
         ref: 'main-dev'  
     - run: git submodule update --init --recursive
     - run: cd golang && make -C ../c build && mv ../c/libusearch.a libusearch.a && go test -v
-    # - uses: wangyoucao577/go-release-action@v1
-    #   with:
-    #     github_token: ${{ secrets.GITHUB_TOKEN }}
-    #     goos: ${{ matrix.goos }}
-    #     goarch: ${{ matrix.goarch }}
-    #     project_path: "./golang"
-    #     binary_name: "lib"
-    #     extra_files: LICENSE README.md
-
         
 
   # test_cpp:
