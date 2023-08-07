@@ -41,7 +41,7 @@ jobs:
     - uses: wangyoucao577/go-release-action@v1
       with:
         pre_command: |
-          sudo apt-get update && sudo apt-get install -y cmake g++-12 build-essential libjemalloc-dev
+          apt-get update && apt-get install -y cmake g++-12 build-essential libjemalloc-dev
           cmake -B ./build_release \
           -DCMAKE_CXX_COMPILER="g++-12" \
           -DCMAKE_BUILD_TYPE=Release \
