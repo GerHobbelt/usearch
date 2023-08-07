@@ -6,7 +6,7 @@ CXX_FLAGS = -std=c++11
 
 CXX_FLAGS += -Wall -Wextra -Wno-conversion -Wno-unknown-pragmas -O3 -march=native -pedantic
 
-HEADER_INCLUDES = -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/
+HEADER_INCLUDES = -I.  -I ../../include/  -I ../../fp16/include/ -I ../../robin-map/include/
 
 .PHONY: build
 build:
