@@ -37,6 +37,7 @@ jobs:
     - run: |
         # mkdir golang/c
         cp -r ./c/* golang/
+        sed -i 's/libusearch\.so/libusearch.a/g' golang/Makefile
     - uses: wangyoucao577/go-release-action@v1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
