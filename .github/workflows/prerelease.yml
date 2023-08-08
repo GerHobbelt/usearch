@@ -43,7 +43,7 @@ jobs:
         goarch: ${{ matrix.goarch }}
         project_path: "./golang"
         binary_name: "lib"
-        build_command: make -C ../c build && mv ../c/libusearch.a libusearch.a && go test -v
+        build_command: make -C ../c build && mv ../c/libusearch.so libusearch.a && go test -v
         extra_files: LICENSE README.md
         
 
