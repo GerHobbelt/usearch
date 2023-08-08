@@ -34,19 +34,19 @@ jobs:
       with:
         ref: 'main-dev'  
     - run: git submodule update --init --recursive
-    # - run: |
-    #     # mkdir golang/c
-    #     cp -r ./c/* golang/
-    #     sed -i 's/libusearch\.so/libusearch.a/g' golang/Makefile
+    - run: |
+        # mkdir golang/c
+        # cp -r ./c/* golang/
+        sed -i 's/libusearch\.so/libusearch.a/g' golang/Makefile
     - uses: wangyoucao577/go-release-action@v1
       with:
-        pre_command: "apt-get update && apt-get install -y gcc build-essential libjemalloc-dev python3 python3-pip && pip3 install --upgrade pip setuptools && pip3 install cmake && cmake -B ./build_release -DCMAKE_BUILD_TYPE=Release -DUSEARCH_BUILD_TEST=1 -DUSEARCH_USE_OPENMP=1 -DUSEARCH_USE_SIMSIMD=1 -DUSEARCH_USE_JEMALLOC=1 -DUSEARCH_BUILD_BENCHMARK=1 && make -C ./build_release -j"
+        pre_command: "apt-get update && apt-get install -y gcc build-essential libjemalloc-dev python3 python3-pip && pip3 install --upgrade pip setuptools && pip3 install cmake"
         github_token: ${{ secrets.GITHUB_TOKEN }}
         goos: ${{ matrix.goos }}
         goarch: ${{ matrix.goarch }}
         project_path: "./golang"
         binary_name: "lib"
-        build_command: make
+        build_command: make -C ../c build
         extra_files: LICENSE README.md
         
 
