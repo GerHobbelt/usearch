@@ -282,11 +282,14 @@ template <typename scalar_at, typename allocator_at> class buffer_gt {
     ~buffer_gt() noexcept {
         if (!std::is_trivially_destructible<scalar_at>::value)
             for (std::size_t i = 0; i != size_; ++i)
-                data_[i].~scalar_at();
+                destroy_at(data_ + i);
         allocator_at{}.deallocate(data_, size_);
         data_ = nullptr;
         size_ = 0;
     }
+
+    scalar_at& operator[](size_t index) { return data_[index]; }
+    const scalar_at& operator[](const size_t index) const { return data_[index]; }
     scalar_at* data() const noexcept { return data_; }
     std::size_t size() const noexcept { return size_; }
     scalar_at* begin() const noexcept { return data_; }
