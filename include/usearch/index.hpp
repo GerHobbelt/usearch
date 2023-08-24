@@ -287,14 +287,6 @@ template <typename scalar_at, typename allocator_at> class buffer_gt {
         data_ = nullptr;
         size_ = 0;
     }
-
-    scalar_at& operator[](size_t index) {
-        return data_[index];
-    }
-
-    static const scalar_at& operator[](const size_t index) const {
-        return data_[index];
-    }
     scalar_at* data() const noexcept { return data_; }
     std::size_t size() const noexcept { return size_; }
     scalar_at* begin() const noexcept { return data_; }
@@ -2793,7 +2785,7 @@ class index_gt {
         config_.connectivity_base = header.connectivity_base;
         pre_ = precompute_(config_);
         misaligned_ptr_gt<level_t> levels{(byte_t*)file.data() + offset + sizeof(header)};
-        offsets[0] = offset + sizeof(header) + sizeof(level_t) * header.size;
+        offsets[0u] = offset + sizeof(header) + sizeof(level_t) * header.size;
         for (std::size_t i = 1; i < header.size; ++i)
             offsets[i] = offsets[i - 1] + node_bytes_(levels[i - 1]);
 
