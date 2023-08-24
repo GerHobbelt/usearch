@@ -1,9 +1,40 @@
+name: Release
 
+on:
+  push:
+    branches: ["create-packages"]
 
+env:
+  BUILD_TYPE: Release
+  GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+  PYTHONUTF8: 1
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
-- name: Set up GCC
-  uses: egor-tensin/setup-gcc@v1
-  with:
-    version: latest
-    platform: x64
+jobs:
+  create_apt_package:
+    name: Create apt package for Ubuntu
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        persist-credentials: false
+        ref: 'create-packages'
+    - run: git submodule update --init --recursive
+    
+    - name: Setup cmake
+      uses: jwlawson/actions-setup-cmake@v1.13
+    
+    - uses: taiki-e/install-action@v2
+    
+    - name: Set up GCC
+      uses: egor-tensin/setup-gcc@v1
+      with:
+        version: latest
+        platform: x64
+
+    - run: g++ --version
