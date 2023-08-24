@@ -288,8 +288,11 @@ template <typename scalar_at, typename allocator_at> class buffer_gt {
         size_ = 0;
     }
 
-    scalar_at& operator[](size_t index) { return data_[index]; }
-    static scalar_at& operator[](const size_t index) const {
+    scalar_at& operator[](size_t index) {
+        return data_[index];
+    }
+
+    static const scalar_at& operator[](const size_t index) const {
         return data_[index];
     }
     scalar_at* data() const noexcept { return data_; }
