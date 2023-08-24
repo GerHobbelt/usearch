@@ -16,19 +16,19 @@ permissions:
   id-token: write
 
 jobs:
-  create_apt_package:
-    name: Create apt package for Ubuntu
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        persist-credentials: false
-        ref: 'create-packages'
+  # create_apt_package:
+  #   name: Create apt package for Ubuntu
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       persist-credentials: false
+  #       ref: 'create-packages'
 
-    - name: Install dependencies
-      run: |
-        sudo apt update && 
-        sudo apt install -y cmake g++-12 build-essential libjemalloc-dev
+  #   - name: Install dependencies
+  #     run: |
+  #       sudo apt update && 
+  #       sudo apt install -y cmake g++-12 build-essential libjemalloc-dev
 
 #   versioning:
 #     name: Semantic Release
@@ -109,39 +109,41 @@ jobs:
 #             * Source code (tar.gz) : `${{ steps.hashes.outputs.tar_hash }}`
 
 
-#   build_wheels:
-#     name: Build Wheels for ${{ matrix.os }}
-#     needs: versioning
-#     runs-on: ${{ matrix.os }}
-#     strategy:
-#       matrix:
-#         os: [ubuntu-20.04, macOS-11, windows-2022]
+  build_wheels:
+    name: Build Wheels for ${{ matrix.os }}
+    # needs: versioning
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2022]
 
-#     steps:
-#       - uses: actions/checkout@v3
-#         with:
-#           ref: 'main'      
-#       - uses: actions/setup-python@v3
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: 'main'      
+      - uses: actions/setup-python@v3
       
-#       - name: Setup Docker
-#         if: matrix.os == 'ubuntu-20.04'
-#         uses: crazy-max/ghaction-setup-docker@v1.0.0
-#         with:
-#           version: 23.0.1
+      - name: Setup Docker
+        if: matrix.os == 'ubuntu-20.04'
+        uses: crazy-max/ghaction-setup-docker@v1.0.0
+        with:
+          version: 23.0.1
 
-#       - name: Setup QEMU
-#         if: matrix.os == 'ubuntu-20.04'
-#         uses: docker/setup-qemu-action@v2.1.0
+      - name: Setup QEMU
+        if: matrix.os == 'ubuntu-20.04'
+        uses: docker/setup-qemu-action@v2.1.0
 
-#       - name: Install CIBuildWheel
-#         run: python -m pip install cibuildwheel
+      - name: Install CIBuildWheel
+        run: python -m pip install cibuildwheel
 
-#       - name: Build wheels
-#         run: python -m cibuildwheel
+      - name: Build wheels
+        run: python -m cibuildwheel
+        env:
+          CIBW_SKIP: cp36-* cp37-* cp38-* cp39-* cp310-* cp312-*
 
-#       - uses: actions/upload-artifact@v3
-#         with:
-#           path: ./wheelhouse/*.whl
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./wheelhouse/*.whl
   
   
 #   publish_python:
