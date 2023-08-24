@@ -138,8 +138,6 @@ jobs:
 
       - name: Build wheels
         run: python -m cibuildwheel
-        env:
-          CIBW_SKIP: cp36-* cp311-* cp312-*
 
       - uses: actions/upload-artifact@v3
         with:
