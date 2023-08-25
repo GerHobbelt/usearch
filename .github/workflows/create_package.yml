@@ -49,16 +49,8 @@ jobs:
         persist-credentials: false
         ref: 'create-packages'
     - run: git submodule update --init --recursive
-    
-    - name: Setup cmake
-      uses: jwlawson/actions-setup-cmake@v1.13
-    
-    - uses: taiki-e/install-action@v2
-    
-    - name: Set up GCC
-      uses: egor-tensin/setup-mingw@v2
-      with:
-        platform: x64
+
+    - run: brew install gcc-12
 
     - run: |
         cd c/ && g++ -std=c++17 -o libusearch_c.dll lib.cpp -I. -I ../include/ -I ../fp16/include/ -I ../robin-map/include/ && cd ../
