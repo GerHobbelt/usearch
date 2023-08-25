@@ -42,7 +42,7 @@ jobs:
 
   create_apt_package_macOS:
     name: Create apt package for macOS
-    runs-on: windows-latest
+    runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v3
       with:
