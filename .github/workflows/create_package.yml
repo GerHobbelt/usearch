@@ -53,6 +53,6 @@ jobs:
     - run: brew install gcc@12
 
     - run: |
-        cd c/ && g++ -std=c++17 -o libusearch_c.dll lib.cpp -I. -I ../include/ -I ../fp16/include/ -I ../robin-map/include/ && cd ../
-        cd golang && mv ../c/libusearch_c.dll libusearch_c.dll && go test -v
+        cd c/ && g++ -std=c++17 -o libusearch_c.a lib.cpp -I. -I ../include/ -I ../fp16/include/ -I ../robin-map/include/ && cd ../
+        cd golang && mv ../c/libusearch_c.a libusearch_c.a && go test -v
 
