@@ -26,7 +26,7 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
     fi
 
 RUN version=$(cat VERSION) && \
-    echo $arch
+    echo $arch && \
     mkdir -p usearch_"$arch"_"$version"/DEBIAN && \
     touch usearch_"$arch"_"$version"/DEBIAN/control && \
     mkdir -p usearch_"$arch"_"$version"/usr/local/lib && \
