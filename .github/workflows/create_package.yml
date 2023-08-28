@@ -36,17 +36,18 @@ jobs:
       with:
         version: "10.0"
 
-    - name: Get Usearch version
-      id: version
-      run: |
-        set /p version=<VERSION
-        echo %version% >> $GITHUB_OUTPUT
+    # - name: Get Usearch version
+    #   id: version
+    #   run: |
+    #     set /p version=<VERSION
+    #     echo %version% >> $GITHUB_OUTPUT
 
     - name: Build Usearch lib
       run: |
+        set /p version=<VERSION
         $env:CC = "clang"
         $env:CXX = "clang++"
-        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c_${{ steps.version.outputs.version }}.dll
+        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c_%version%.dll
 
     - name: Upload archive to release Assets
       uses: xresloader/upload-to-github-release@v1
@@ -82,14 +83,16 @@ jobs:
       run: |
         export CC=clang
         export CXX=clang++
+        cp c/usearch.h golang/
         cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c_${{ steps.version.outputs.version }}.a
+        zip -r usearch_macOS.zip libusearch_c_${{ steps.version.outputs.version }}.a usearch.h
 
     - name: Upload archive to release Assets
       uses: xresloader/upload-to-github-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        file: "golang/libusearch_c_${{ steps.version.outputs.version }}.a"
+        file: "golang/usearch_macOS.zip"
         update_latest_release: true
 
 
