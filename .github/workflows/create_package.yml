@@ -38,16 +38,17 @@ jobs:
 
     - name: Build Usearch lib
       run: |
+        version=$(cat VERSION)
         $env:CC = "clang"
         $env:CXX = "clang++"
-        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.dll
+        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c_$version.dll
 
     - name: Upload archive to release Assets
       uses: xresloader/upload-to-github-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        file: "golang/libusearch_c.dll"
+        file: "golang/libusearch_c_$version.dll"
         update_latest_release: true
 
 
@@ -68,16 +69,17 @@ jobs:
 
     - name: Build Usearch lib
       run: |
+        version=$(cat VERSION)
         export CC=clang
         export CXX=clang++
-        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.a
+        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c_$version.a
 
     - name: Upload archive to release Assets
       uses: xresloader/upload-to-github-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        file: "golang/libusearch_c.a"
+        file: "golang/libusearch_c_$version.a"
         update_latest_release: true
 
 
