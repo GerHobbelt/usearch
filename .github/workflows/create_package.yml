@@ -40,7 +40,7 @@ jobs:
   #       cd c/ && g++ -std=c++17 -o libusearch_c.dll lib.cpp -I. -I ../include/ -I ../fp16/include/ -I ../robin-map/include/ && cd ../
   #       cd golang && mv ../c/libusearch_c.dll libusearch_c.dll && go test -v
 
-  create_apt_package_linux:
+  create_apt_package_macOS:
     name: Create apt package for Linux
     runs-on: macOS-latest
     steps:
@@ -50,16 +50,19 @@ jobs:
         ref: 'create-packages'
     - run: git submodule update --init --recursive
 
-    - run: brew install gcc@12
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: "10.0"
 
     - run: |
-        cd c/ && g++ -std=c++17 -o libusearch_c.a lib.cpp -I. -I ../include/ -I ../fp16/include/ -I ../robin-map/include/ && cd ../
+        cd c/ && clang++ -std=c++17 -o libusearch_c.a lib.cpp -I. -I ../include/ -I ../fp16/include/ -I ../robin-map/include/ && cd ../
         cd golang && mv ../c/libusearch_c.a libusearch_c.a && go test -v
 
 
 
   create_apt_package_macOS:
-    name: Create apt package for macOS
+    name: Create apt package for Linux on ${{ matrix.arch }}
     runs-on: macOS-latest
     strategy:
       matrix:
@@ -73,14 +76,11 @@ jobs:
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
-      with:
-        platforms: 'arm64, amd64'
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
       with:
         driver-opts: env.BUILDKIT_STEP_LOG_MAX_SIZE=10485760
-        platforms: linux/arm64, linux/amd64
 
       # - name: Get docker daemon IP
       #   id: dockerip
