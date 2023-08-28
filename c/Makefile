@@ -10,7 +10,7 @@ HEADER_INCLUDES = -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/inclu
 
 .PHONY: libusearch_c.a
 libusearch_c.a:
-	$(CXX) $(CXX_FLAGS) -o libusearch_c.a -O3 lib.cpp $(HEADER_INCLUDES)
+	$(CXX) $(CXX_FLAGS) -o libusearch_c.a -O3 lib.cpp $(HEADER_INCLUDES) -static
 
 .PHONY: libusearch_c.so
 libusearch_c.so:
