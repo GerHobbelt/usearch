@@ -1,4 +1,5 @@
 #include <cassert>
+#include <math.h>
 #include <usearch/index_dense.hpp>
 
 extern "C" {
