@@ -72,15 +72,15 @@ jobs:
     - run: git submodule update --init --recursive
 
     - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: 'arm64, amd64'
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: 'arm64, amd64'
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          driver-opts: env.BUILDKIT_STEP_LOG_MAX_SIZE=10485760
-          platforms: linux/arm64, linux/amd64
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+      with:
+        driver-opts: env.BUILDKIT_STEP_LOG_MAX_SIZE=10485760
+        platforms: linux/arm64, linux/amd64
 
       # - name: Get docker daemon IP
       #   id: dockerip
@@ -95,23 +95,23 @@ jobs:
       #     echo "runner:$user_pass" | sudo chpasswd
       #     echo "user_pass=$user_pass" >> "$GITHUB_OUTPUT"
           
-      - name: Create Conan packages ARM for Python SDK
-        run: |
-          docker buildx create --use
-          docker buildx build \
-          --platform ${{ matrix.arch }} \
-          --file ./Dockerfile.libs \
-          --tag unum/ustore-deps:latest \
-          --load .
+    - name: Create Conan packages ARM for Python SDK
+      run: |
+        docker buildx create --use
+        docker buildx build \
+        --platform ${{ matrix.arch }} \
+        --file ./Dockerfile.libs \
+        --tag unum/ustore-deps:latest \
+        --load .
 
-      - name: Clear Docker buildx cache
-        run: docker buildx prune --all --force
+    - name: Clear Docker buildx cache
+      run: docker buildx prune --all --force
 
-      - name: Upload archive to release Assets
-        uses: xresloader/upload-to-github-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          file: ustore_deps_arm_linux_python.tar.gz
-          update_latest_release: true
+    # - name: Upload archive to release Assets
+    #   uses: xresloader/upload-to-github-release@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     file: ustore_deps_arm_linux_python.tar.gz
+    #     update_latest_release: true
 
