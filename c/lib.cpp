@@ -2,6 +2,10 @@
 
 #include <usearch/index_dense.hpp>
 
+#ifndef USEARCH_EXPORT
+#define USEARCH_EXPORT
+#endif
+
 extern "C" {
 #include "usearch.h"
 }
