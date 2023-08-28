@@ -19,7 +19,6 @@ jobs:
   create_apt_package_windows:
     name: Create apt package for Windows
     runs-on: windows-latest
-    shell: pwsh
     steps:
     - uses: actions/checkout@v3
       with:
@@ -40,7 +39,7 @@ jobs:
         $env:CC = "clang"
         $env:CXX = "clang++"
         cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.a
-        
+
 
   create_apt_packages_macOS:
     name: Create brew package for macOS
