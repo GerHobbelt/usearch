@@ -40,7 +40,7 @@ jobs:
       run: |
         $env:CC = "clang"
         $env:CXX = "clang++"
-        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.a
+        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.dll
 
 
   create_apt_packages_macOS:
