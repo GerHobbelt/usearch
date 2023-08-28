@@ -23,7 +23,7 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
         export arch="amd"; \
     elif [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
         export arch="arm"; \
-    fi
+    fi && \
     version=$(cat VERSION) && \
     mkdir -p usearch_"$arch"_"$version"/DEBIAN && \
     touch usearch_"$arch"_"$version"/DEBIAN/control && \
