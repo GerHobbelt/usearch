@@ -1,0 +1,13 @@
+FROM ubuntu:23.04
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3.11 python3-pip cmake g++-12 build-essential libjemalloc-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+
+COPY . .
+
+
+RUN cd golang && make -C ../c build && mv ../c/libusearch.a libusearch.a && go test -v
