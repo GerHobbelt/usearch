@@ -19,7 +19,7 @@ RUN cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusea
 
 RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
         mkdir usearch_amd && \
-        mdkir usearch_amd/DEBIAN && \
+        mkdir usearch_amd/DEBIAN && \
         touch usearch_amd/DEBIAN/control && \
         mkdir -p usearch_amd/usr/local/lib && \
         mkdir usearch_amd/usr/local/include && \
@@ -30,7 +30,7 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
         sshpass -p "$user_pass" scp -o StrictHostKeyChecking=no usearch_amd.deb "$user_name"@"$docker_ip":/home/"$user_name"/work/usearch/usearch/; \
     elif [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
         mkdir usearch_arm && \
-        mdkir usearch_arm/DEBIAN && \
+        mkdir usearch_arm/DEBIAN && \
         touch usearch_arm/DEBIAN/control && \
         mkdir -p usearch_arm/usr/local/lib && \
         mkdir usearch_arm/usr/local/include && \
