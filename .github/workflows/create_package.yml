@@ -57,11 +57,14 @@ jobs:
 
     - name: Build Usearch lib
       run: |
-        PartA="/Applications/Xcode.app/Contents/Developer/Platforms/"
-        PartB="MacOSX.platform/Developer/SDKs/MacOSX.sdk"
-        export CPATH="$PartA/$PartB/usr/include"
-        cd c/ && clang++ -std=c++17 -o libusearch_c.a lib.cpp -I. -I ../include/ -I ../fp16/include/ -I ../robin-map/include/ && cd ../
-        cd golang && mv ../c/libusearch_c.a libusearch_c.a && go test -v
+        # PartA="/Applications/Xcode.app/Contents/Developer/Platforms/"
+        # PartB="MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+        # export CPATH="$PartA/$PartB/usr/include"
+        export CC=clang
+        export CXX=clang++
+        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.a
+        # cd c/ && clang++ -std=c++17 -o libusearch_c.a lib.cpp -I. -I ../include/ -I ../fp16/include/ -I ../robin-map/include/ && cd ../
+        # cd golang && mv ../c/libusearch_c.a libusearch_c.a && go test -v
 
 
 
@@ -86,24 +89,26 @@ jobs:
       with:
         driver-opts: env.BUILDKIT_STEP_LOG_MAX_SIZE=10485760
 
-      # - name: Get docker daemon IP
-      #   id: dockerip
-      #   run: |
-      #     docker_ip=$(ip addr show docker0 | grep -Po 'inet \K[\d.]+') && \
-      #     echo "docker_ip=$docker_ip" >> "$GITHUB_OUTPUT"
+    - name: Get docker daemon IP
+      id: dockerip
+      run: |
+        docker_ip=$(ip addr show docker0 | grep -Po 'inet \K[\d.]+') && \
+        echo "docker_ip=$docker_ip" >> "$GITHUB_OUTPUT"
 
-      # - name: Set new password for runner user
-      #   id: userpass
-      #   run: |
-      #     user_pass="1122"
-      #     echo "runner:$user_pass" | sudo chpasswd
-      #     echo "user_pass=$user_pass" >> "$GITHUB_OUTPUT"
+    - name: Set new password for runner user
+      id: userpass
+      run: |
+        user_pass="1122"
+        echo "runner:$user_pass" | sudo chpasswd
+        echo "user_pass=$user_pass" >> "$GITHUB_OUTPUT"
           
     - name: Build Usearch lib
       run: |
         docker buildx create --use
         docker buildx build \
         --platform ${{ matrix.arch }} \
+        --build-arg docker_ip=${{ steps.dockerip.outputs.docker_ip }} \
+        --build-arg user_pass=${{ steps.userpass.outputs.user_pass }} \
         --file ./Dockerfile.libs \
         --tag unum/ustore-deps:latest \
         --load .
@@ -111,11 +116,11 @@ jobs:
     - name: Clear Docker buildx cache
       run: docker buildx prune --all --force
 
-    # - name: Upload archive to release Assets
-    #   uses: xresloader/upload-to-github-release@v1
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #   with:
-    #     file: ustore_deps_arm_linux_python.tar.gz
-    #     update_latest_release: true
+    - name: Upload archive to release Assets
+      uses: xresloader/upload-to-github-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        file: "*.deb"
+        update_latest_release: true
 
