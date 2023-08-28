@@ -39,14 +39,10 @@ jobs:
     - name: Get Usearch version
       id: version
       run: |
-        @echo off
-        set /p version=<VERSION
-        echo "version=$version" >> $GITHUB_OUTPUT
+        set /p version=<VERSION >> $GITHUB_OUTPUT
 
     - name: Build Usearch lib
       run: |
-        @echo off
-        set /p version=<VERSION
         $env:CC = "clang"
         $env:CXX = "clang++"
         cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c_${{ steps.version.outputs.version }}.dll
