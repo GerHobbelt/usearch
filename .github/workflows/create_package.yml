@@ -41,7 +41,7 @@ jobs:
   #       cd golang && mv ../c/libusearch_c.dll libusearch_c.dll && go test -v
 
   create_apt_packages_macOS:
-    name: Create apt package for macOS on amd64
+    name: Create brew package for macOS
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v3
@@ -57,15 +57,9 @@ jobs:
 
     - name: Build Usearch lib
       run: |
-        # PartA="/Applications/Xcode.app/Contents/Developer/Platforms/"
-        # PartB="MacOSX.platform/Developer/SDKs/MacOSX.sdk"
-        # export CPATH="$PartA/$PartB/usr/include"
         export CC=clang
         export CXX=clang++
         cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.a
-        # cd c/ && clang++ -std=c++17 -o libusearch_c.a lib.cpp -I. -I ../include/ -I ../fp16/include/ -I ../robin-map/include/ && cd ../
-        # cd golang && mv ../c/libusearch_c.a libusearch_c.a && go test -v
-
 
 
   create_apt_packages_linux:
