@@ -10,4 +10,4 @@ RUN apt-get update && \
 COPY . .
 
 
-RUN cd golang && make -C ../c build && mv ../c/libusearch.a libusearch.a && go test -v
+RUN cd golang && make -C ../c libusearch_c.a && mv ../c/libusearch_c.a libusearch_c.a && go test -v
