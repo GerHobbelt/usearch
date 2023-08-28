@@ -41,7 +41,7 @@ jobs:
   #       cd golang && mv ../c/libusearch_c.dll libusearch_c.dll && go test -v
 
   create_apt_packages_macOS:
-    name: Create apt package for Linux
+    name: Create apt package for macOS
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v3
@@ -74,13 +74,13 @@ jobs:
         ref: 'create-packages'
     - run: git submodule update --init --recursive
 
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
-
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
       with:
         driver-opts: env.BUILDKIT_STEP_LOG_MAX_SIZE=10485760
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
 
       # - name: Get docker daemon IP
       #   id: dockerip
