@@ -39,7 +39,8 @@ jobs:
     - name: Get Usearch version
       id: version
       run: |
-        set /p version=<VERSION >> $GITHUB_OUTPUT
+        set /p version=<VERSION
+        echo %version% >> $GITHUB_OUTPUT
 
     - name: Build Usearch lib
       run: |
@@ -52,7 +53,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        file: "golang/libusearch_c_${{ steps.version.outputs.version }}.dll"
+        file: "golang/*.dll"
         update_latest_release: true
 
 
