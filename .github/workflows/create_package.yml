@@ -42,6 +42,14 @@ jobs:
         $env:CXX = "clang++"
         cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.dll
 
+    - name: Upload archive to release Assets
+      uses: xresloader/upload-to-github-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        file: "golang/libusearch_c.dll"
+        update_latest_release: true
+
 
   create_apt_packages_macOS:
     name: Create brew package for macOS
@@ -63,6 +71,14 @@ jobs:
         export CC=clang
         export CXX=clang++
         cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.a
+
+    - name: Upload archive to release Assets
+      uses: xresloader/upload-to-github-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        file: "golang/libusearch_c.a"
+        update_latest_release: true
 
 
   create_apt_packages_linux:
