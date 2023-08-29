@@ -52,7 +52,7 @@ jobs:
         $env:CC = "clang"
         $env:CXX = "clang++"
         cd c/ && g++ -std=c++11 -o libusearch.dll -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
-        cp c/libusearch.dll golang/libusearch.dll && cp c/usearch.h usearch.h && cd golang/ && go mod download github.com/davvard/usearch-go && go test -v
+        cp c/libusearch.dll golang/libusearch.dll && cp c/usearch.h golang/usearch.h && cd golang/ && go mod download github.com/davvard/usearch-go && go test -v
 
     - name: Upload archive to release Assets
       uses: xresloader/upload-to-github-release@v1
