@@ -20,6 +20,10 @@ jobs:
     name: Create brew package for macOS
     runs-on: macOS-latest
     steps:
+    - uses: actions/checkout@v3
+      with:
+        persist-credentials: false
+        ref: 'create-packages'
 
     - name: Install LLVM and Clang
       uses: KyleMayes/install-llvm-action@v1

@@ -4,10 +4,10 @@
 # Upstream: https://github.com/yourname/mypackage
 
 class Usearch < Formula
-  desc "A description of your package."
+  description "A description of your package."
   homepage "https://github.com/unum-cloud/usearch.git"
-  url "https://github.com/gurgenyegoryan/usearch/releases/download/v0.1.1/usearch_macOS_1.2.0.zip"
-  sha256 "5e89f631d39a7db7f46d87d634904c8c93ae1d08a7fd787d3076a945ff32e4a4"
+  source_url "https://github.com/gurgenyegoryan/usearch/releases/download/v0.1.1/usearch_macOS_1.2.0.zip"
+  source_sha256 "5e89f631d39a7db7f46d87d634904c8c93ae1d08a7fd787d3076a945ff32e4a4"
 
   def install
     system "curl -L https://github.com/gurgenyegoryan/usearch/releases/download/v0.1.1/usearch_macOS_1.2.0.zip -o usearch.zip"
