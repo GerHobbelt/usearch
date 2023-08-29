@@ -1,20 +1,35 @@
-# This formula installs the mypackage package.
-#
-# Author: Your Name
-# Upstream: https://github.com/yourname/mypackage
+require 'open-uri'
+require 'zip'
 
-class Usearch < Formula
-  desc "A description of your package."
-  homepage "https://github.com/unum-cloud/usearch.git"
-  url "https://github.com/gurgenyegoryan/usearch/releases/download/v0.1.1/usearch_macOS_1.2.0.zip"
-  sha256 "5e89f631d39a7db7f46d87d634904c8c93ae1d08a7fd787d3076a945ff32e4a4"
+# URL of the zip file containing libusearch_c.a and usearch.h
+zip_file_url = 'https://github.com/gurgenyegoryan/usearch/releases/download/v0.1.1/usearch_macOS_1.2.0.zip'
 
-  def install
-    # Create a libexec directory and extract the archive there
-    libexec.install Dir["*"]
+# Path to where you want to extract the files
+extract_path = '/tmp/'
 
-    # Create symlinks to the necessary files in the Cellar's include and lib directories
-    include.install_symlink Dir["#{libexec}/usearch.h"]
-    lib.install_symlink Dir["#{libexec}/libusearch_c.a"]
+# Ensure the extraction directory exists
+Dir.mkdir(extract_path) unless Dir.exist?(extract_path)
+
+# Download the zip file and save it to a temporary location
+zip_temp_path = '/tmp/usearch_temp.zip'
+open(zip_temp_path, 'wb') do |file|
+  file << URI.open(zip_file_url).read
+end
+
+# Extract the contents of the zip file
+Zip::File.open(zip_temp_path) do |zip_file|
+  zip_file.each do |entry|
+    entry_path = File.join(extract_path, entry.name)
+    entry.extract(entry_path)
   end
 end
+
+# Move the extracted files to the desired locations
+File.rename(File.join(extract_path, 'libusearch_c.a'), '/usr/local/lib/libusearch_c.a')
+File.rename(File.join(extract_path, 'usearch.h'), '/usr/local/include/usearch.h')
+
+# Clean up the temporary files
+File.delete(zip_temp_path)
+Dir.delete(extract_path)
+
+puts 'usearch files have been successfully installed!'
