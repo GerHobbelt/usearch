@@ -26,5 +26,5 @@ jobs:
       with:
         version: "10.0"
 
-    - name: Build Usearch lib
-      run: brew install usearch.rb
+    - name: Install Usearch lib
+      run: brew install ./usearch.rb
