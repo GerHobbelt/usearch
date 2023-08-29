@@ -99,7 +99,7 @@ jobs:
     - name: Build Usearch lib
       run: |
         cp c/usearch.h golang/
-        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch.a && cp ../c/usearch.h usearch.h && go test -v
+        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.so && cp ../c/usearch.h usearch.h && go test -v
         zip -r usearch_macOS_${{ steps.version.outputs.version }}.zip libusearch.a usearch.h
 
     - name: Upload archive to release Assets
