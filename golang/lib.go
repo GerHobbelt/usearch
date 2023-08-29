@@ -114,10 +114,10 @@ func NewIndex(conf IndexConfig) (index *Index, err error) {
 	index = &Index{config: conf}
 
 	conf = index.config
-	dimensions := C.ulong(conf.Dimensions)
-	connectivity := C.ulong(conf.Connectivity)
-	expansion_add := C.ulong(conf.ExpansionAdd)
-	expansion_search := C.ulong(conf.ExpansionSearch)
+	dimensions := C.ulonglong(conf.Dimensions)
+	connectivity := C.ulonglong(conf.Connectivity)
+	expansion_add := C.ulonglong(conf.ExpansionAdd)
+	expansion_search := C.ulonglong(conf.ExpansionSearch)
 
 	options := C.struct_usearch_init_options_t{}
 	options.dimensions = dimensions
