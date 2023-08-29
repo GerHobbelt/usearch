@@ -35,3 +35,4 @@ jobs:
         which ruby
         gem install rubyzip
         ruby usearch.rb
+        ls /usr/local/lib/ && ls /usr/local/include/
