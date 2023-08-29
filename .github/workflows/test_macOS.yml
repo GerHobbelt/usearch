@@ -33,4 +33,4 @@ jobs:
     - name: Install Usearch lib
       run: |
         gem install rubyzip
-        brew install usearch.rb
+        /usr/bin/ruby usearch.rb
