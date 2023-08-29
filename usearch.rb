@@ -1,5 +1,5 @@
 require 'open-uri'
-require 'zip'
+require 'zip/zip'
 
 # URL of the zip file containing libusearch_c.a and usearch.h
 zip_file_url = 'https://github.com/gurgenyegoryan/usearch/releases/download/v0.1.1/usearch_macOS_1.2.0.zip'
