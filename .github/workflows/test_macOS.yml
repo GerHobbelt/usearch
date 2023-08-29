@@ -25,10 +25,10 @@ jobs:
         persist-credentials: false
         ref: 'create-packages'
 
-    - name: Install LLVM and Clang
-      uses: KyleMayes/install-llvm-action@v1
-      with:
-        version: "10.0"
+    # - name: Install LLVM and Clang
+    #   uses: KyleMayes/install-llvm-action@v1
+    #   with:
+    #     version: "10.0"
 
     - name: Install Usearch lib
-      run: brew install --build-from-source usearch.rb
+      run: brew install usearch.rb
