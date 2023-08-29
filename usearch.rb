@@ -32,4 +32,4 @@ File.rename(File.join(extract_path, 'usearch.h'), '/usr/local/include/usearch.h'
 File.delete(zip_temp_path)
 Dir.delete(extract_path)
 
-puts 'usearch files have been successfully installed!'
+puts 'Usearch files have been successfully installed!'

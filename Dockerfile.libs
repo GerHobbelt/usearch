@@ -15,7 +15,7 @@ RUN apt-get update && \
 COPY . .
 
 
-RUN cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.a && && cp ../c/usearch.h usearch.h go test -v && cd ..
+RUN cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.a && cp ../c/usearch.h usearch.h go test -v && cd ..
 
 RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
         export arch="amd"; \
