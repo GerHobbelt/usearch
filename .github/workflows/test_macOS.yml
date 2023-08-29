@@ -33,5 +33,5 @@ jobs:
     - name: Install Usearch lib
       run: |
         which ruby
-        # gem install rubyzip
-        # /usr/bin/ruby usearch.rb
+        gem install rubyzip
+        ruby usearch.rb
