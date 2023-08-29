@@ -31,10 +31,10 @@ jobs:
     
     - uses: taiki-e/install-action@v2
     
-    - name: Install LLVM and Clang
-      uses: KyleMayes/install-llvm-action@v1
-      with:
-        version: "10.0"
+    # - name: Install LLVM and Clang
+    #   uses: KyleMayes/install-llvm-action@v1
+    #   with:
+    #     version: "10.0"
 
     - uses: actions/setup-go@v4
       with:
@@ -49,8 +49,8 @@ jobs:
     - name: Build Usearch lib
       run: |
         set /p version=<VERSION
-        $env:CC = "clang"
-        $env:CXX = "clang++"
+        # $env:CC = "clang"
+        # $env:CXX = "clang++"
         cd c/ && g++ -std=c++11 -o libusearch.dll -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
         cp c/libusearch.dll golang/libusearch.dll && cp c/usearch.h golang/usearch.h && cd golang/ && go mod download github.com/davvard/usearch-go && go test -v
 
@@ -87,11 +87,11 @@ jobs:
       run: |
         version=$(cat VERSION)
         echo "version=$version" >> $GITHUB_OUTPUT
+    
+    - run: xcode-select --install
 
     - name: Build Usearch lib
       run: |
-        export CC=clang
-        export CXX=clang++
         cp c/usearch.h golang/
         cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch.a && cp ../c/usearch.h usearch.h && go mod download github.com/davvard/usearch-go && go test -v
         zip -r usearch_macOS_${{ steps.version.outputs.version }}.zip libusearch.a usearch.h
