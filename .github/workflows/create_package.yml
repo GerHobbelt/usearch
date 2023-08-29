@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: ["create"]
+    branches: ["create-packages"]
 
 env:
   BUILD_TYPE: Release
@@ -47,7 +47,8 @@ jobs:
         set /p version=<VERSION
         $env:CC = "clang"
         $env:CXX = "clang++"
-        cd c/ && g++ -std=c++11 -o libusearch.dll -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared
+        cd c/ && g++ -std=c++11 -o libusearch.dll -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
+        cp c/libusearch.dll golang/libusearch.dll && cd golang/ && go test -v
 
     - name: Upload archive to release Assets
       uses: xresloader/upload-to-github-release@v1
@@ -84,7 +85,7 @@ jobs:
         export CC=clang
         export CXX=clang++
         cp c/usearch.h golang/
-        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.a
+        cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch_c.a && go test -v
         zip -r usearch_macOS_${{ steps.version.outputs.version }}.zip libusearch_c.a usearch.h
 
     - name: Upload archive to release Assets
