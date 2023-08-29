@@ -10,8 +10,9 @@ class Usearch < Formula
   sha256 "5e89f631d39a7db7f46d87d634904c8c93ae1d08a7fd787d3076a945ff32e4a4"
 
   def install
+    system "curl -L https://github.com/gurgenyegoryan/usearch/releases/download/v0.1.1/usearch_macOS_1.2.0.zip -o usearch.zip"
     # Extract the archive.
-    system "usearch_macOS_1.2.0.zip"
+    system "unzip usearch.zip"
 
     # Move the `lib.a` file to `/usr/local/lib`.
     system "mv libusearch_c.a /usr/local/lib/libusearch_c.a"
