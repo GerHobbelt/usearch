@@ -38,7 +38,7 @@ jobs:
 
     - uses: actions/setup-go@v4
       with:
-        go-version: '^1.21.0'
+        go-version: '^1.19.0'
 
     # - name: Get Usearch version
     #   id: version
@@ -51,6 +51,7 @@ jobs:
         set /p version=<VERSION
         # $env:CC = "clang"
         # $env:CXX = "clang++"
+        g++ --version
         cd c/ && g++ -std=c++11 -o libusearch.dll -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
         cp c/libusearch.dll golang/libusearch.dll && cp c/usearch.h golang/usearch.h && cd golang/ && go test -v
 
