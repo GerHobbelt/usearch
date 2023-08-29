@@ -12,7 +12,7 @@ class Usearch < Formula
   def install
     # system "curl -L https://github.com/gurgenyegoryan/usearch/releases/download/v0.1.1/usearch_macOS_1.2.0.zip -o usearch.zip"
     # Extract the archive.
-    system "unzip usearch.zip"
+    system "unzip usearch_macOS_1.2.0.zip"
 
     # Move the `lib.a` file to `/usr/local/lib`.
     system "mv libusearch_c.a /usr/local/lib/libusearch_c.a"
