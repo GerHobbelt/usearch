@@ -92,7 +92,7 @@ jobs:
 
     - name: Install arm-none-eabi-gcc
       run: |
-        port install arm-none-eabi-gcc
+        brew install armmbed/formulae/arm-none-eabi-gcc
         cd c/ && arm-none-eabi-g++ -std=c++11 -o libusearch.so -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared
 
     - name: Build Usearch lib
