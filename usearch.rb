@@ -1,16 +1,22 @@
-class UsearchLibrary < Formula
-    desc "Faster & Smaller Single-File Search Engine for Vectors & Texts"
-    homepage "https://unum-cloud.com"
-    url "https://example.com/path/to/source/usearch_macOS.tar.gz"  # Replace with the actual URL to your source files
-    sha256 "..."  # Replace with the actual SHA256 checksum
+# This formula installs the mypackage package.
+#
+# Author: Your Name
+# Upstream: https://github.com/yourname/mypackage
+
+class Usearch < Formula
+    desc "A description of your package."
+    homepage "https://github.com/unum-cloud/usearch.git"
+    url "https://github.com/gurgenyegoryan/usearch/releases/download/v0.1.1/usearch_macOS.zip"
+    sha256 "97a2c814d9a60787d685832eb04b47c8a004459c9c862ffa451454f759a7868c"
   
     def install
-      # Extract the source archive
-      system "unzip", "usearch_macOS.zip"  # Replace with the actual archive file name
+      # Extract the archive.
+      system "unzip usearch_macOS.zip"
   
-      # Move files to appropriate locations
-      lib.install "libusearch_c.a"  # Move lib.a to /usr/local/lib/
-      include.install "usearch.h"  # Move usearch.h to /usr/local/include/
+      # Move the `lib.a` file to `/usr/local/lib`.
+      system "mv libusearch_c_1.2.0.a /usr/local/lib"
+  
+      # Move the `usearch.h` file to `/usr/local/include`.
+      system "mv usearch.h /usr/local/include"
     end
   end
-  

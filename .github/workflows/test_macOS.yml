@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    branches: ["create-packages"]
+
+env:
+  BUILD_TYPE: Release
+  GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+  PYTHONUTF8: 1
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  create_apt_packages_macOS:
+    name: Create brew package for macOS
+    runs-on: macOS-latest
+    steps:
+
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: "10.0"
+
+    - name: Build Usearch lib
+      run: brew install usearch.rb
