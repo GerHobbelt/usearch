@@ -42,7 +42,10 @@ jobs:
 
     - name: Get Version
       id: set_version
-      run: echo version="set /p version=<VERSION"                         >> ${GITHUB_OUTPUT}
+      shell: bash
+      run: |
+        version=$(cat VERSION)
+        echo "version=$version" >> $GITHUB_OUTPUT
         
     - name: Build Usearch lib
       run: |
