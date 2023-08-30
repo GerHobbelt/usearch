@@ -31,11 +31,6 @@ jobs:
     
     - uses: taiki-e/install-action@v2
     
-    # - name: Install LLVM and Clang
-    #   uses: KyleMayes/install-llvm-action@v1
-    #   with:
-    #     version: "10.0"
-
     - uses: actions/setup-go@v4
       with:
         go-version: '^1.19.0'
@@ -45,19 +40,24 @@ jobs:
       with:
         platform: x64
 
-    - name: Build Usearch lib
+    - name: Get Version
+      id: set_version
       run: |
         set /p version=<VERSION
-        g++ --version
+        echo "Version: $version"
+        
+    - name: Build Usearch lib
+      run: |
         cd c/ && g++ -std=c++11 -o libusearch.dll -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
-        cp c/libusearch.dll golang/libusearch.dll && cp c/usearch.h golang/usearch.h && cd golang/ && go test -v
+        cp c/libusearch.dll golang/libusearch.dll && cp c/usearch.h golang/usearch.h && cd golang/ && go test -v && \
+        tar -cvf usearch_windows_${{ steps.set_version.outputs.version }}.tar libusearch.dll usearch.h
 
     - name: Upload archive to release Assets
       uses: xresloader/upload-to-github-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        file: "c/*.dll"
+        file: "golang/*.tar"
         update_latest_release: true
 
 
