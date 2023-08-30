@@ -16,50 +16,6 @@ permissions:
   id-token: write
 
 jobs:
-  build_macOS:
-    name: Build
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        include:
-        - goos: darwin
-          goarch: amd64
-          ext: '.dylib'
-          CC: o64-clang
-          CXX: o64-clang++
-
-        - goos: darwin
-          goarch: arm64
-          ext: '.dylib'
-          CC: oa64-clang
-          CXX: oa64-clang++
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.19'
-
-    - name: Setup osxcross
-      uses: mbround18/setup-osxcross@v1
-      with:
-        osx-version: "11.3"
-
-    - name: Build Library
-      run: |
-        export GOOS=${{ matrix.goos }}
-        export GOARCH=${{ matrix.goarch }}
-        export CC=${{ matrix.CC }}
-        export CXX=${{ matrix.CXX }}
-        export CGO_ENABLED=1
-        export PATH="$(pwd)/osxcross/target/bin:$PATH"
-        cd c/ && ${{ matrix.CXX }} -std=c++11 -o libusearch.so -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && ls && cd ..
-      shell: bash
-    
 #   create_apt_package_windows:
 #     name: Create apt package for Windows
 #     runs-on: windows-latest
@@ -106,50 +62,54 @@ jobs:
 #         update_latest_release: true
 
 
-#   create_apt_packages_macOS:
-#     name: Create brew package for macOS
-#     runs-on: macOS-latest
-#     steps:
-#     - uses: actions/checkout@v3
-#       with:
-#         persist-credentials: false
-#         ref: 'create-packages'
+  create_apt_packages_macOS:
+    name: Create brew package for macOS
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        persist-credentials: false
+        ref: 'create-packages'
 
-#     - run: git submodule update --init --recursive
+    - run: git submodule update --init --recursive
 
-#     # - name: Install LLVM and Clang
-#     #   uses: KyleMayes/install-llvm-action@v1
-#     #   with:
-#     #     version: "10.0"
+    # - name: Install LLVM and Clang
+    #   uses: KyleMayes/install-llvm-action@v1
+    #   with:
+    #     version: "10.0"
 
-#     - uses: actions/setup-go@v4
-#       with:
-#         go-version: '^1.21.0'
+    - uses: actions/setup-go@v4
+      with:
+        go-version: '^1.21.0'
 
-#     - name: Get Usearch version
-#       id: version
-#       run: |
-#         version=$(cat VERSION)
-#         echo "version=$version" >> $GITHUB_OUTPUT
+    - name: Get Usearch version
+      id: version
+      run: |
+        version=$(cat VERSION)
+        echo "version=$version" >> $GITHUB_OUTPUT
 
-#     - name: Install GCC 12
-#       run: brew install gcc@12
+    - name: Install GCC 12
+      run: brew install gcc@12
 
-#     - name: Build Usearch lib
-#       run: |
-#         cd c/ && g++ -std=c++11 -o libusearch.so -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
-#         cp c/usearch.h golang/
-#         cp c/libusearch.so golang/libusearch.so && cd golang/ && go test -v
-#         # cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch.a && echo 'AAAAAAAAAAAAAAAAAAAAa' && go test -v
-#         zip -r usearch_macOS_${{ steps.version.outputs.version }}.zip libusearch.a usearch.h
+    - name: Install arm gcc
+      run: brew install --cask gcc-arm-embedded
 
-#     - name: Upload archive to release Assets
-#       uses: xresloader/upload-to-github-release@v1
-#       env:
-#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#       with:
-#         file: "golang/usearch_macOS_${{ steps.version.outputs.version }}.zip"
-#         update_latest_release: true
+    - name: Build Usearch lib
+      run: |
+        cd c/ && clang -target armv7-none-eabi -std=c++11 -o libusearch.so -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
+        cd c/ && g++ -std=c++11 -o libusearch.so -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
+        cp c/usearch.h golang/
+        cp c/libusearch.so golang/libusearch.so && cd golang/ && go test -v
+        # cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch.a && echo 'AAAAAAAAAAAAAAAAAAAAa' && go test -v
+        zip -r usearch_macOS_${{ steps.version.outputs.version }}.zip libusearch.a usearch.h
+
+    - name: Upload archive to release Assets
+      uses: xresloader/upload-to-github-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        file: "golang/usearch_macOS_${{ steps.version.outputs.version }}.zip"
+        update_latest_release: true
 
 
 #   create_apt_packages_linux:
