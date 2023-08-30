@@ -44,20 +44,20 @@ jobs:
       id: set_version
       run: |
         set /p version=<VERSION
-        echo "Version: $version"
+        echo %version% >> GITHUB_OUTPUT
         
     - name: Build Usearch lib
       run: |
         cd c/ && g++ -std=c++11 -o libusearch.dll -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
         cp c/libusearch.dll golang/libusearch.dll && cp c/usearch.h golang/usearch.h && cd golang/ && go test -v
-        tar -cvf usearch_windows_${{ steps.set_version.outputs.version }}.tar libusearch.dll usearch.h
+        tar -cvf usearch_windows_${{ steps.set_version.outputs.version }}.tar .\libusearch.dll .\usearch.h
 
     - name: Upload archive to release Assets
       uses: xresloader/upload-to-github-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        file: "golang/*.tar"
+        file: "golang/usearch_windows_${{ steps.set_version.outputs.version }}.tar"
         update_latest_release: true
 
 
