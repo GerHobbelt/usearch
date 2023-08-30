@@ -88,9 +88,9 @@ jobs:
         version=$(cat VERSION)
         echo "version=$version" >> $GITHUB_OUTPUT
 
-    - uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: latest-stable
+    # - uses: maxim-lobanov/setup-xcode@v1
+    #   with:
+    #     xcode-version: latest-stable
 
     - name: Build Usearch lib
       run: |
