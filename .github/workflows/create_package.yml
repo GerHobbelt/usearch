@@ -44,7 +44,7 @@ jobs:
       id: set_version
       run: |
         set /p version=<VERSION
-        echo %version% >> GITHUB_OUTPUT
+        echo %version% | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
         
     - name: Build Usearch lib
       run: |
