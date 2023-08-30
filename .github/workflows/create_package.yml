@@ -49,7 +49,7 @@ jobs:
     - name: Build Usearch lib
       run: |
         cd c/ && g++ -std=c++11 -o libusearch.dll -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
-        cp c/libusearch.dll golang/libusearch.dll && cp c/usearch.h golang/usearch.h && cd golang/ && go test -v && \
+        cp c/libusearch.dll golang/libusearch.dll && cp c/usearch.h golang/usearch.h && cd golang/ && go test -v
         tar -cvf usearch_windows_${{ steps.set_version.outputs.version }}.tar libusearch.dll usearch.h
 
     - name: Upload archive to release Assets
