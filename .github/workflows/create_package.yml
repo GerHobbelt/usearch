@@ -97,7 +97,7 @@ jobs:
         # cd c/ && $(CC) lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -o libusearch.so -target arm64-apple-macos11
         # xcodebuild -arch x86_64 -arch arm64 -mmacosx-version-min=11.0 -std=c++11 -o libusearch.so lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/
         # cd c/ && clang++ -target armv7-none-eabi -std=c++11 -stdlib=libc++ -o libusearch.so -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
-        cd c/ && g++ -std=c++11 -o libusearch.so -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared -target arm64-apple-macos11 && cd ..
+        cd c/ && clang++ -std=c++11 -o libusearch.so -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared -target arm64-apple-macos11 && ls -lh && cd ..
         cp c/usearch.h golang/
         cp c/libusearch.so golang/libusearch.so && cd golang/ && go test -v
         cd golang && make -C ../c libusearch_c.so && mv ../c/libusearch_c.so libusearch.a && echo 'AAAAAAAAAAAAAAAAAAAAa' && go test -v
