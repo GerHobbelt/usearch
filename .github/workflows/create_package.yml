@@ -88,16 +88,14 @@ jobs:
         version=$(cat VERSION)
         echo "version=$version" >> $GITHUB_OUTPUT
 
-    - name: Install GCC 12
-      run: brew install gcc@12
-
-    - name: Install arm gcc
-      run: brew install --cask gcc-arm-embedded
+    - uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
 
     - name: Build Usearch lib
       run: |
-        
-        cd c/ && clang++ -target armv7-none-eabi -std=c++11 -stdlib=libc++ -o libusearch.so -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
+        xcodebuild -arch x86_64 -arch arm64 -mmacosx-version-min=11.0 -std=c++11 -shared -o libusearch.so lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/
+        # cd c/ && clang++ -target armv7-none-eabi -std=c++11 -stdlib=libc++ -o libusearch.so -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
         # cd c/ && g++ -std=c++11 -o libusearch.so -O3 lib.cpp -I.  -I ../include/  -I ../fp16/include/ -I ../robin-map/include/ -shared && cd ..
         cp c/usearch.h golang/
         cp c/libusearch.so golang/libusearch.so && cd golang/ && go test -v
