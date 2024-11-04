@@ -28,6 +28,7 @@ machine: str = platform.machine().lower()
 
 
 is_gcc = False
+is_clang = False
 if is_linux:
     cxx = os.environ.get("CXX")
     if cxx:
@@ -36,6 +37,7 @@ if is_linux:
             full_path = subprocess.check_output([command, cxx], text=True).strip()
             compiler_name = os.path.basename(full_path)
             is_gcc = ("g++" in compiler_name) and ("clang++" not in compiler_name)
+            is_clang = ("clang++" in compiler_name) and ("g++" not in compiler_name)
         except subprocess.CalledProcessError:
             pass
 
@@ -48,6 +50,8 @@ use_simsimd: bool = get_bool_env("USEARCH_USE_SIMSIMD", prefer_simsimd)
 use_fp16lib: bool = get_bool_env("USEARCH_USE_FP16LIB", prefer_fp16lib)
 use_openmp: bool = get_bool_env("USEARCH_USE_OPENMP", prefer_openmp)
 
+if use_simsimd:
+    sources.append("simsimd/c/lib.c")
 
 # Common arguments for all platforms
 macros_args.append(("USEARCH_USE_OPENMP", "1" if use_openmp else "0"))
@@ -151,6 +155,7 @@ ext_modules = [
         extra_compile_args=compile_args,
         extra_link_args=link_args,
         define_macros=macros_args,
+        language="c++",
     ),
 ]
 
@@ -171,6 +176,16 @@ if use_simsimd:
     include_dirs.append("simsimd/include")
 if use_fp16lib:
     include_dirs.append("fp16/include")
+
+
+# With Clang, `setuptools` doesn't properly use the `language="c++"` argument we pass.
+# The right thing would be to pass down `-x c++` to the compiler, before specifying the source files.
+# This nasty workaround overrides the `CC` environment variable with the `CXX` variable.
+cc_compiler_variable = os.environ.get("CC")
+cxx_compiler_variable = os.environ.get("CXX")
+if is_clang:
+    if cxx_compiler_variable:
+        os.environ["CC"] = cxx_compiler_variable
 
 setup(
     name=__lib_name__,
@@ -212,3 +227,8 @@ setup(
         "tqdm",
     ],
 )
+
+# Reset the CC environment variable, that we overrode earlier.
+if is_clang:
+    if cxx_compiler_variable:
+        os.environ["CC"] = cc_compiler_variable

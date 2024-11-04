@@ -8,8 +8,8 @@
 #define UNUM_USEARCH_HPP
 
 #define USEARCH_VERSION_MAJOR 2
-#define USEARCH_VERSION_MINOR 14
-#define USEARCH_VERSION_PATCH 0
+#define USEARCH_VERSION_MINOR 15
+#define USEARCH_VERSION_PATCH 1
 
 // Inferring C++ version
 // https://stackoverflow.com/a/61552074
@@ -27,6 +27,9 @@
 #define USEARCH_DEFINED_APPLE
 #elif defined(__linux__)
 #define USEARCH_DEFINED_LINUX
+#if defined(__ANDROID_API__)
+#define USEARCH_DEFINED_ANDROID
+#endif
 #endif
 
 // Inferring the compiler: Clang vs GCC
@@ -932,18 +935,6 @@ class sorted_buffer_gt {
         elements_[slot] = element;
         size_ += size_ != limit;
         return true;
-    }
-
-    inline bool insert_sorted(element_t const* elements, std::size_t elements_count, std::size_t limit) noexcept {
-        if (!size_) {
-        }
-        // If we are inserting elements, we only perform full-scale binary search once,
-        // and then only compute successive insertion offsets based only on the tail.
-        std::size_t slot = std::lower_bound(elements_, elements_ + size_, elements[0], &less) - elements_;
-        if (slot == limit)
-            return false;
-        std::size_t to_move = size_ - slot - (size_ == limit);
-        std::size_t next_slot = std::lower_bound(elements_ + slot, elements_ + size_, elements[1], &less) - elements_;
     }
 
     inline element_t pop() noexcept {

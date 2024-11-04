@@ -11,6 +11,8 @@ env:
   PYTHONUTF8: 1
   PYTHON_VERSION: 3.11
   DOTNET_VERSION: 7.0.x
+  ANDROID_NDK_VERSION: 26.3.11579264
+  ANDROID_SDK_VERSION: 21
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -33,6 +35,7 @@ jobs:
           version-file: "VERSION"
           update-version-in: |
             package.json:"version": "(\d+\.\d+\.\d+)"
+            package-lock.json:"usearch",\n\s+"version": "(\d+\.\d+\.\d+)"
             CITATION.cff:^version: (\d+\.\d+\.\d+)
             Cargo.toml:^version = "(\d+\.\d+\.\d+)"
             Cargo.lock:name = "usearch"\nversion = "(\d+\.\d+\.\d+)"
@@ -51,11 +54,11 @@ jobs:
           dry-run: "true"
 
   test_ubuntu_gcc:
-    name: Ubuntu (GCC 12)
-    runs-on: ubuntu-22.04
+    name: Ubuntu (GCC 14)
+    runs-on: ubuntu-24.04
     env:
-      CC: gcc-12
-      CXX: g++-12
+      CC: gcc
+      CXX: g++
 
     steps:
       - uses: actions/checkout@v4
@@ -66,12 +69,12 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y cmake build-essential libjemalloc-dev libomp-dev gcc-12 g++-12
-          cmake -B build_artifacts -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSEARCH_BUILD_TEST_CPP=1 -DUSEARCH_BUILD_TEST_C=1 -DUSEARCH_BUILD_LIB_C=1 -DUSEARCH_BUILD_SQLITE=1 -DUSEARCH_USE_OPENMP=1 -DUSEARCH_USE_SIMSIMD=1 -DUSEARCH_USE_JEMALLOC=1
+          cmake -B build_artifacts -D CMAKE_BUILD_TYPE=RelWithDebInfo -D USEARCH_BUILD_TEST_CPP=1 -D USEARCH_BUILD_TEST_C=1 -D USEARCH_BUILD_LIB_C=1 -D USEARCH_BUILD_SQLITE=1 -D USEARCH_USE_OPENMP=1 -D USEARCH_USE_SIMSIMD=1 -D USEARCH_USE_JEMALLOC=1
           cmake --build build_artifacts --config RelWithDebInfo
       - name: Test C++
-        run: ./build_artifacts/test_cpp
+        run: build_artifacts/test_cpp
       - name: Test C
-        run: ./build_artifacts/test_c
+        run: build_artifacts/test_c
 
         # Python
       - name: Set up Python ${{ env.PYTHON_VERSION }}
@@ -100,11 +103,15 @@ jobs:
         run: npm test
 
         # Rust
+      - name: Set up Rust
+        run: |
+          rustup update stable
+          rustup default stable
+          rustc -vV
+      - name: Build Rust
+        run: cargo build
       - name: Test Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+        run: cargo test
 
         # Java
       - name: Setup Java
@@ -140,11 +147,11 @@ jobs:
         working-directory: ${{ github.workspace }}/golang/
 
   test_ubuntu_clang:
-    name: Ubuntu (Clang 16)
-    runs-on: ubuntu-22.04
+    name: Ubuntu (Clang 18)
+    runs-on: ubuntu-24.04
     env:
-      CC: clang-16
-      CXX: clang++-16
+      CC: clang
+      CXX: clang++
 
     steps:
       - uses: actions/checkout@v4
@@ -155,16 +162,13 @@ jobs:
       - name: Build C/C++
         run: |
           sudo apt update
-          sudo apt install -y cmake build-essential libjemalloc-dev
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 16
-          cmake -B build_artifacts -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSEARCH_BUILD_TEST_CPP=1 -DUSEARCH_BUILD_TEST_C=1 -DUSEARCH_BUILD_LIB_C=1 -DUSEARCH_BUILD_SQLITE=1 -DUSEARCH_USE_OPENMP=0 -DUSEARCH_USE_SIMSIMD=1 -DUSEARCH_USE_JEMALLOC=1
+          sudo apt install -y cmake build-essential libjemalloc-dev clang
+          cmake -B build_artifacts -D CMAKE_BUILD_TYPE=RelWithDebInfo -D USEARCH_BUILD_TEST_CPP=1 -D USEARCH_BUILD_TEST_C=1 -D USEARCH_BUILD_LIB_C=1 -D USEARCH_BUILD_SQLITE=1 -D USEARCH_USE_OPENMP=0 -D USEARCH_USE_SIMSIMD=1 -D USEARCH_USE_JEMALLOC=1
           cmake --build build_artifacts --config RelWithDebInfo
       - name: Test C++
-        run: ./build_artifacts/test_cpp
+        run: build_artifacts/test_cpp
       - name: Test C
-        run: ./build_artifacts/test_c
+        run: build_artifacts/test_c
 
         # JavaScript
       - name: Set up Node.js
@@ -189,8 +193,22 @@ jobs:
           pip install pytest pytest-repeat numpy numba cppyy
           pip install --upgrade git+https://github.com/Maratyszcza/PeachPy
           python -m pip install .
+        env:
+          CXX: clang++
+          CC: clang++ # Override the default compiler
       - name: Test Python
         run: pytest
+
+        # Rust
+      - name: Set up Rust
+        run: |
+          rustup update stable
+          rustup default stable
+          rustc -vV
+      - name: Build Rust
+        run: cargo build
+      - name: Test Rust
+        run: cargo test
 
         # C#
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
@@ -207,7 +225,7 @@ jobs:
 
   test_macos:
     name: MacOS
-    runs-on: macos-12
+    runs-on: macos-14
 
     steps:
       - uses: actions/checkout@v4
@@ -218,12 +236,12 @@ jobs:
         run: |
           brew update
           brew install cmake
-          cmake -B build_artifacts -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSEARCH_BUILD_TEST_CPP=1 -DUSEARCH_BUILD_TEST_C=1 -DUSEARCH_BUILD_LIB_C=1 -DUSEARCH_BUILD_SQLITE=1
+          cmake -B build_artifacts -D CMAKE_BUILD_TYPE=RelWithDebInfo -D USEARCH_BUILD_TEST_CPP=1 -D USEARCH_BUILD_TEST_C=1 -D USEARCH_BUILD_LIB_C=1 -D USEARCH_BUILD_SQLITE=1
           cmake --build build_artifacts --config RelWithDebInfo
       - name: Test C++
-        run: ./build_artifacts/test_cpp
+        run: build_artifacts/test_cpp
       - name: Test C
-        run: ./build_artifacts/test_c
+        run: build_artifacts/test_c
 
         # JavaScript
       - name: Set up Node.js
@@ -247,6 +265,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-repeat numpy
           python -m pip install .
+        env:
+          CXX: clang++
+          CC: clang++ # Override the default compiler
       - name: Test Python
         run: pytest
 
@@ -256,6 +277,17 @@ jobs:
       - name: Test ObjC/Swift
         run: swift test
 
+        # Rust
+      - name: Set up Rust
+        run: |
+          rustup update stable
+          rustup default stable
+          rustc -vV
+      - name: Build Rust
+        run: cargo build
+      - name: Test Rust
+        run: cargo test
+
         # C#
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
         uses: actions/setup-dotnet@v3
@@ -263,11 +295,13 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Test .NET
         run: |
-          mkdir -p "${{ github.workspace }}/csharp/lib/runtimes/osx-x64/native"
-          cp "${{ github.workspace }}/build_artifacts/libusearch_c.dylib" "${{ github.workspace }}/csharp/lib/runtimes/osx-x64/native"
+          mkdir -p "${{ github.workspace }}/csharp/lib/runtimes/osx-arm64/native"
+          cp "${{ github.workspace }}/build_artifacts/libusearch_c.dylib" "${{ github.workspace }}/csharp/lib/runtimes/osx-arm64/native"
           dotnet test -c Debug --logger "console;verbosity=detailed" --filter "FullyQualifiedName!=Cloud.Unum.USearch.Tests.UsearchIndexTests.PersistAndRestore"
         shell: bash
         working-directory: ${{ github.workspace }}/csharp
+        env:
+          DYLD_PRINT_LIBRARIES: 1
 
   test_windows:
     name: Windows
@@ -280,7 +314,7 @@ jobs:
       - name: Build C/C++
         run: |
           choco install cmake
-          cmake -B build_artifacts -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSEARCH_BUILD_TEST_CPP=1 -DUSEARCH_BUILD_TEST_C=1 -DUSEARCH_BUILD_LIB_C=1 -DUSEARCH_BUILD_SQLITE=0
+          cmake -B build_artifacts -D CMAKE_BUILD_TYPE=RelWithDebInfo -D USEARCH_BUILD_TEST_CPP=1 -D USEARCH_BUILD_TEST_C=1 -D USEARCH_BUILD_LIB_C=1 -D USEARCH_BUILD_SQLITE=0
           cmake --build build_artifacts --config RelWithDebInfo
       - name: Test C++
         run: .\build_artifacts\test_cpp.exe
@@ -311,6 +345,17 @@ jobs:
         run: npm run build-js
       - name: Test JavaScript
         run: npm test
+
+        # Rust
+      - name: Set up Rust
+        run: |
+          rustup update stable
+          rustup default stable
+          rustc -vV
+      - name: Build Rust
+        run: cargo build
+      - name: Test Rust
+        run: cargo test
 
         # C#
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
@@ -397,16 +442,16 @@ jobs:
       - name: Build C/C++
         run: |
           cmake -B build_artifacts \
-            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-            -DCMAKE_C_COMPILER_TARGET=${{ matrix.target }} \
-            -DCMAKE_CXX_COMPILER_TARGET=${{ matrix.target }} \
-            -DCMAKE_SYSTEM_NAME=Linux \
-            -DCMAKE_SYSTEM_PROCESSOR=${{ matrix.arch }} \
-            -DUSEARCH_BUILD_LIB_C=1 \
-            -DUSEARCH_BUILD_SQLITE=1 \
-            -DUSEARCH_BUILD_TEST_CPP=0 \
-            -DUSEARCH_BUILD_BENCH_CPP=0
+            -D CMAKE_BUILD_TYPE=RelWithDebInfo \
+            -D CMAKE_EXPORT_COMPILE_COMMANDS=1 \
+            -D CMAKE_C_COMPILER_TARGET=${{ matrix.target }} \
+            -D CMAKE_CXX_COMPILER_TARGET=${{ matrix.target }} \
+            -D CMAKE_SYSTEM_NAME=Linux \
+            -D CMAKE_SYSTEM_PROCESSOR=${{ matrix.arch }} \
+            -D USEARCH_BUILD_LIB_C=1 \
+            -D USEARCH_BUILD_SQLITE=1 \
+            -D USEARCH_BUILD_TEST_CPP=0 \
+            -D USEARCH_BUILD_BENCH_CPP=0
 
           cmake --build build_artifacts --config RelWithDebInfo
 
@@ -415,3 +460,65 @@ jobs:
         run: |
           test -e build_artifacts/libusearch_c.so
           test -e build_artifacts/libusearch_sqlite.so
+
+  test_ubuntu_android_ndk:
+    name: Android NDK Build
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+          - processor: armv7a
+            abi: armeabi-v7a
+            target: armv7-linux-androideabi
+          - processor: aarch64
+            abi: arm64-v8a
+            target: aarch64-linux-android
+    steps:
+      - uses: actions/checkout@v4
+      - run: git submodule update --init --recursive
+
+      - name: Install NDK ndk
+        run: |
+          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;${{ env.ANDROID_NDK_VERSION }}"
+
+      - name: Build C/C++
+        run: |
+          cmake -B build_artifacts \
+            -D CMAKE_BUILD_TYPE=RelWithDebInfo \
+            -D CMAKE_EXPORT_COMPILE_COMMANDS=1 \
+            -D CMAKE_TOOLCHAIN_FILE=${ANDROID_HOME}/ndk/${{ env.ANDROID_NDK_VERSION }}/build/cmake/android.toolchain.cmake \
+            -D CMAKE_ANDROID_STL_TYPE=c++_static \
+            -D ANDROID_PLATFORM=${{ env.ANDROID_SDK_VERSION }} \
+            -D ANDROID_ABI=${{ matrix.abi }} \
+            -D USEARCH_BUILD_LIB_C=1 \
+            -D USEARCH_BUILD_TEST_CPP=0 \
+            -D USEARCH_BUILD_BENCH_CPP=0
+
+          cmake --build build_artifacts --config RelWithDebInfo
+
+        # We can't run the produced builds, but we can make sure they exist
+      - name: Test artifacts presense
+        run: |
+          test -e build_artifacts/libusearch_c.so
+
+        # Rust
+      - name: Set up Rust
+        run: |
+          rustup update stable
+          rustup default stable
+          rustup target add ${{ matrix.target }}
+          rustc -vV
+
+      - name: Set up Rust Env
+        run: |
+          TOOLCHAIN=${ANDROID_HOME}/ndk/${{ env.ANDROID_NDK_VERSION }}/toolchains/llvm/prebuilt/linux-x86_64/bin/
+          NDK_CLANG=$(find ${TOOLCHAIN} -name "${{ matrix.processor }}*${{ env.ANDROID_SDK_VERSION }}-clang")
+          echo "CC_${{ matrix.target }}=${NDK_CLANG}" >> ${GITHUB_ENV}
+          echo "CXX_${{ matrix.target }}=${NDK_CLANG}++" >> ${GITHUB_ENV}
+          echo "AR_${{ matrix.target }}=${TOOLCHAIN}/llvm-ar" >> ${GITHUB_ENV}
+          echo "CARGO_${{ matrix.target }}=${NDK_CLANG}" >> ${GITHUB_ENV}
+          echo "CARGO_${{ matrix.target }}=${TOOLCHAIN}/llvm-ar" >> ${GITHUB_ENV}
+
+      - name: Build Rust
+        run: |
+          cargo build --target ${{ matrix.target }}
