@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.1)
 project(
     usearch
-    VERSION 2.16.0
+    VERSION 2.16.1
     LANGUAGES C CXX
     DESCRIPTION "Smaller & Faster Single-File Vector Search Engine from Unum"
     HOMEPAGE_URL "https://github.com/unum-cloud/usearch"
@@ -373,6 +373,9 @@ function (setup_target TARGET_NAME)
     target_compile_definitions(${TARGET_NAME} PRIVATE "USEARCH_USE_SIMSIMD=$<BOOL:${USEARCH_USE_SIMSIMD}>")
 
 endfunction ()
+
+# Must be called before "add_subdirectory()". See https://stackoverflow.com/questions/30250494/ctest-not-detecting-tests.
+enable_testing()
 
 if (${USEARCH_BUILD_TEST_CPP} OR ${USEARCH_BUILD_BENCH_CPP})
     add_subdirectory(cpp)
