@@ -535,6 +535,7 @@ index = Index(ndim=ndim, metric=CompiledMetric(
 - [x] GPTCache: [Python](https://github.com/zilliztech/GPTCache/releases/tag/0.1.29).
 - [x] Sentence-Transformers: Python [docs](https://www.sbert.net/docs/package_reference/quantization.html#sentence_transformers.quantization.semantic_search_usearch).
 - [x] Pathway: [Rust](https://github.com/pathwaycom/pathway).
+- [x] Memgraph: [C++ MVP](https://github.com/memgraph/memgraph/pull/2406), [C++ Stable](https://github.com/memgraph/memgraph/pull/2500), [docs](https://memgraph.com/docs/querying/vector-search)
 
 ## Citations
 
@@ -544,7 +545,7 @@ doi = {10.5281/zenodo.7949416},
 author = {Vardanian, Ash},
 title = {{USearch by Unum Cloud}},
 url = {https://github.com/unum-cloud/usearch},
-version = {2.16.4},
+version = {2.16.7},
 year = {2023},
 month = oct,
 }

@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.1)
 project(
     usearch
-    VERSION 2.16.4
+    VERSION 2.16.7
     LANGUAGES C CXX
     DESCRIPTION "Smaller & Faster Single-File Vector Search Engine from Unum"
     HOMEPAGE_URL "https://github.com/unum-cloud/usearch"
@@ -149,6 +149,18 @@ target_include_directories(
     ${USEARCH_TARGET_NAME} ${USEARCH_SYSTEM_INCLUDE} INTERFACE $<BUILD_INTERFACE:${USEARCH_INCLUDE_BUILD_DIR}>
                                                                $<INSTALL_INTERFACE:include>
 )
+if (USEARCH_USE_FP16LIB)
+    target_include_directories(
+        ${USEARCH_TARGET_NAME} ${USEARCH_SYSTEM_INCLUDE} INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/fp16/include>
+                                                                   $<INSTALL_INTERFACE:fp16/include>
+    )
+endif()
+if (USEARCH_USE_SIMSIMD)
+    target_include_directories(
+        ${USEARCH_TARGET_NAME} ${USEARCH_SYSTEM_INCLUDE} INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/simsimd/include>
+                                                                   $<INSTALL_INTERFACE:simsimd/include>
+    )
+endif()
 
 # Install a pkg-config file, so other tools can find this
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/pkg-config.pc.in" "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc")
