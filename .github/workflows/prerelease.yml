@@ -11,6 +11,9 @@ env:
   PYTHONUTF8: 1
   PYTHON_VERSION: 3.11
   DOTNET_VERSION: 8.0.x
+  NODE_VERSION: 20
+  JAVA_VERSION: 21
+  GO_VERSION: "^1.21.0"
   ANDROID_NDK_VERSION: 26.3.11579264
   ANDROID_SDK_VERSION: 21
 
@@ -94,7 +97,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
       - name: Install dependencies
         run: npm ci --skip-scripts
       - name: Build JavaScript
@@ -115,9 +118,9 @@ jobs:
 
         # Java
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
-          java-version: "21"
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: "adopt"
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2.4.2
@@ -126,7 +129,7 @@ jobs:
 
         # C#
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Test .NET
@@ -174,7 +177,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
       - name: Install dependencies
         run: npm ci --skip-scripts
       - name: Build JavaScript
@@ -184,7 +187,7 @@ jobs:
 
         # Python
       - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Build Python
@@ -212,7 +215,7 @@ jobs:
 
         # C#
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Test .NET
@@ -247,7 +250,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
       - name: Install dependencies
         run: npm ci --skip-scripts
       - name: Build JavaScript
@@ -257,7 +260,7 @@ jobs:
 
         # Python
       - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Build Python
@@ -290,7 +293,7 @@ jobs:
 
         # C#
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Test .NET
@@ -323,7 +326,7 @@ jobs:
 
         # Python
       - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Build Python
@@ -338,7 +341,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
       - name: Install dependencies
         run: npm ci --skip-scripts
       - name: Build JavaScript
@@ -359,7 +362,7 @@ jobs:
 
         # C#
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Test .NET
@@ -457,28 +460,31 @@ jobs:
           cmake --build build_artifacts --config RelWithDebInfo
 
         # We can't run the produced builds, but we can make sure they exist
-      - name: Test artifacts presense
+      - name: Test artifacts presence
         run: |
           test -e build_artifacts/libusearch_c.so
           test -e build_artifacts/libusearch_sqlite.so
 
-  test_ubuntu_android_ndk:
-    name: Android NDK Build
+  test_android:
+    name: Android
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         include:
           - processor: armv7a
             abi: armeabi-v7a
             target: armv7-linux-androideabi
+            arch: arm32
           - processor: aarch64
             abi: arm64-v8a
             target: aarch64-linux-android
+            arch: arm64
     steps:
       - uses: actions/checkout@v4
       - run: git submodule update --init --recursive
 
-      - name: Install NDK ndk
+      - name: Install NDK
         run: |
           ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;${{ env.ANDROID_NDK_VERSION }}"
 
@@ -498,9 +504,8 @@ jobs:
           cmake --build build_artifacts --config RelWithDebInfo
 
         # We can't run the produced builds, but we can make sure they exist
-      - name: Test artifacts presense
-        run: |
-          test -e build_artifacts/libusearch_c.so
+      - name: Test artifacts presence
+        run: test -e build_artifacts/libusearch_c.so
 
         # Rust
       - name: Set up Rust
@@ -521,5 +526,31 @@ jobs:
           echo "CARGO_${{ matrix.target }}=${TOOLCHAIN}/llvm-ar" >> ${GITHUB_ENV}
 
       - name: Build Rust
+        run: cargo build --target ${{ matrix.target }}
+      
+        # Java
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: "adopt"
+      
+        # We skip native compilation with Gradle and focus just on the Java part,
+        # assuming the we won't be able to tun the tests without emulation
+      - name: Test Java bindings with Android library
         run: |
-          cargo build --target ${{ matrix.target }}
+          mkdir -p build/libs/usearch/shared/
+          cp build_artifacts/libusearch_c.so build/libs/usearch/shared/
+          javac -cp . java/cloud/unum/usearch/*.java
+          echo "Java compilation successful with Android NDK library"
+      
+      - name: Package Android libraries for release
+        run: |
+          version=$(cat VERSION)
+          zip -r usearch_android_${{ matrix.arch }}_${version}.zip build_artifacts/libusearch_c.so c/usearch.h
+      
+      - name: Upload Android libraries
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ matrix.abi }}-libraries
+          path: usearch_android_*.zip

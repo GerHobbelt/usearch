@@ -1,24 +1,112 @@
 /**
  * Java bindings for Unum USearch vector search library.
+ * 
+ * <p>USearch is a high-performance approximate nearest neighbor (ANN) search engine
+ * optimized for vector similarity search. This Java binding provides a convenient
+ * interface to the underlying C++ implementation.
+ * 
+ * <h2>Key Features:</h2>
+ * <ul>
+ *   <li>Multiple distance metrics (Cosine, Euclidean, Inner Product, etc.)</li>
+ *   <li>Multiple quantization types (Float64, Float32, BFloat16, Float16, Int8, Binary)</li>
+ *   <li>SIMD-accelerated distance calculations</li>
+ *   <li>Memory-efficient storage with configurable precision</li>
+ *   <li>Thread-safe operations for concurrent construction or search</li>
+ *   <li>Persistent storage with save/load capabilities</li>
+ * </ul>
+ * 
+ * <h2>Basic Usage:</h2>
+ * <pre>{@code
+ * // Create an index for 128-dimensional vectors using cosine similarity
+ * try (Index index = new Index.Config()
+ *         .metric(Index.Metric.COSINE)
+ *         .quantization(Index.Quantization.FLOAT32)
+ *         .dimensions(128)
+ *         .connectivity(16)
+ *         .build()) {
+ *     
+ *     // Add vectors
+ *     float[] vector1 = {1.0f, 2.0f, 3.0f, ...}; // 128 dimensions
+ *     index.add(42L, vector1);
+ *     
+ *     // Search for similar vectors
+ *     float[] query = {1.1f, 2.1f, 3.1f, ...};
+ *     long[] results = index.search(query, 10); // Find 10 nearest neighbors
+ *     
+ *     // Retrieve a vector by key
+ *     float[] retrieved = index.get(42L);
+ * }
+ * }</pre>
+ * 
+ * <h2>Advanced Configuration:</h2>
+ * <pre>{@code
+ * Index index = new Index.Config()
+ *     .metric(Index.Metric.EUCLIDEAN_SQUARED)    // Distance metric
+ *     .quantization(Index.Quantization.FLOAT16)  // Storage precision  
+ *     .dimensions(768)                           // Vector dimensions
+ *     .capacity(1000000)                         // Expected number of vectors
+ *     .connectivity(32)                          // Graph connectivity (higher = better recall)
+ *     .expansion_add(128)                        // Search width during insertion
+ *     .expansion_search(64)                      // Search width during queries
+ *     .build();
+ * }</pre>
+ * 
+ * <h2>Thread Safety:</h2>
+ * <p>USearch index operations are thread-safe for many concurrent reads or many concurrent writes.
+ * Operations except {@code search()} and {@code add()} shouldn't be called concurrently.</p>
+ * 
+ * <h2>Memory Management:</h2>
+ * <p>This class implements {@link AutoCloseable} for automatic resource management.
+ * Always use try-with-resources or explicitly call {@link #close()} to free native memory.</p>
+ * 
+ * @see <a href="https://github.com/unum-cloud/usearch">USearch GitHub Repository</a>
+ * @see <a href="https://unum-cloud.github.io/usearch/">USearch Documentation</a>
  */
 package cloud.unum.usearch;
 
 import java.io.IOException;
 
-/**
- * Java bindings for Unum USearch.
- * <p>
- * Provides interface to interact with USearch library and perform various
- * operations related to indexing and searching.
- *
- * @see <a href=
- *      "https://nachtimwald.com/2017/06/06/wrapping-a-c-library-in-java/">Wrapping
- *      a C library in Java</a>
- * @see <a href=
- *      "https://www3.ntu.edu.sg/home/ehchua/programming/java/javanativeinterface.html">Java
- *      Native Interface tutorial</a>
- */
 public class Index implements AutoCloseable {
+
+  /**
+   * Distance metric constants for vector similarity calculations.
+   * These constants can be used with {@link Config#metric(String)}.
+   */
+  public static final class Metric {
+    /** Inner product (dot product) similarity */
+    public static final String INNER_PRODUCT = "ip";
+    /** Cosine similarity for normalized vectors */
+    public static final String COSINE = "cos";
+    /** Euclidean distance (L2) */
+    public static final String EUCLIDEAN = "l2";
+    /** Squared Euclidean distance (faster, no sqrt) */
+    public static final String EUCLIDEAN_SQUARED = "l2sq";
+    /** Haversine distance for geographic coordinates */
+    public static final String HAVERSINE = "haversine";
+    /** Hamming distance for binary vectors */
+    public static final String HAMMING = "hamming";
+    /** Jaccard similarity coefficient */
+    public static final String JACCARD = "jaccard";
+  }
+
+  /**
+   * Scalar quantization types for vector storage.
+   * These constants can be used with {@link Config#quantization(String)}.
+   */
+  public static final class Quantization {
+    /** 64-bit floating point (double precision) */
+    public static final String FLOAT64 = "f64";
+    /** 32-bit floating point (single precision) */
+    public static final String FLOAT32 = "f32";
+    /** Brain Float 16 (half precision with a wider exponent) */
+    public static final String BFLOAT16 = "bf16";
+    /** 16-bit floating point (half precision) */
+    public static final String FLOAT16 = "f16";
+    /** 8-bit integer quantization */
+    public static final String INT8 = "i8";
+    /** Binary quantization (1 bit per dimension, 8 dimensions per word) */
+    public static final String BINARY = "b1";
+  }
 
   private long c_ptr = 0;
 
@@ -38,14 +126,13 @@ public class Index implements AutoCloseable {
    *                         during search operations
    */
   public Index(
-    String metric,
-    String quantization,
-    long dimensions,
-    long capacity,
-    long connectivity,
-    long expansion_add,
-    long expansion_search
-  ) {
+      String metric,
+      String quantization,
+      long dimensions,
+      long capacity,
+      long connectivity,
+      long expansion_add,
+      long expansion_search) {
     this(c_create(metric, quantization, dimensions, capacity, connectivity, expansion_add, expansion_search));
   }
 
@@ -228,7 +315,7 @@ public class Index implements AutoCloseable {
    * @return {@code true} if the vector was successfully removed, {@code false}
    *         otherwise.
    */
-  public boolean remove(int key) {
+  public boolean remove(long key) {
     if (c_ptr == 0) {
       throw new IllegalStateException("Index already closed");
     }
@@ -270,7 +357,8 @@ public class Index implements AutoCloseable {
     /**
      * Default constructor for the Config class.
      */
-    public Config() {}
+    public Config() {
+    }
 
     /**
      * Constructs an Index instance based on the current configuration settings.
@@ -279,14 +367,13 @@ public class Index implements AutoCloseable {
      */
     public Index build() {
       return new Index(
-        _metric,
-        _quantization,
-        _dimensions,
-        _capacity,
-        _connectivity,
-        _expansion_add,
-        _expansion_search
-      );
+          _metric,
+          _quantization,
+          _dimensions,
+          _capacity,
+          _connectivity,
+          _expansion_add,
+          _expansion_search);
     }
 
     /**
@@ -374,14 +461,79 @@ public class Index implements AutoCloseable {
       System.loadLibrary("usearch"); // used for tests. This library in classpath only
     } catch (UnsatisfiedLinkError e) {
       try {
-        if (System.getProperty("os.name").equals("Mac OS X")) {
-          NativeUtils.loadLibraryFromJar("/usearch/libusearch.dylib");
-        } else {
-          NativeUtils.loadLibraryFromJar("/usearch/libusearch.so");
-        }
+        loadLibraryFromJar();
       } catch (IOException e1) {
-        throw new RuntimeException(e1);
+        throw new RuntimeException("Failed to load USearch native library: " + e1.getMessage(), e1);
       }
+    }
+  }
+
+  private static void loadLibraryFromJar() throws IOException {
+    String osName = System.getProperty("os.name").toLowerCase();
+    String osArch = System.getProperty("os.arch").toLowerCase();
+
+    String libName;
+    if (osName.contains("mac") || osName.contains("darwin")) {
+      libName = "libusearch_c.dylib";
+    } else if (osName.contains("windows")) {
+      libName = "libusearch_c.dll";
+    } else {
+      libName = "libusearch_c.so";
+    }
+
+    // Try architecture-specific first, then fall back to generic
+    String[] searchPaths = {
+        "/usearch-native/" + getArchSpecificPath() + "/" + libName, // e.g., /usearch-native/linux-x86_64/libusearch.so
+        "/usearch-native/" + libName // fallback to generic path
+    };
+
+    IOException lastException = null;
+    for (String path : searchPaths) {
+      try {
+        NativeUtils.loadLibraryFromJar(path);
+        return; // Success!
+      } catch (IOException e) {
+        lastException = e;
+        // Continue to next path
+      }
+    }
+
+    throw new IOException("Could not find native library for " + osName + " " + osArch +
+        ". Tried paths: " + String.join(", ", searchPaths), lastException);
+  }
+
+  private static String getArchSpecificPath() {
+    String osName = System.getProperty("os.name").toLowerCase();
+    String osArch = System.getProperty("os.arch").toLowerCase();
+
+    // Normalize architecture names
+    String normalizedArch;
+    if (osArch.equals("amd64") || osArch.equals("x86_64")) {
+      normalizedArch = "x86_64";
+    } else if (osArch.equals("aarch64") || osArch.equals("arm64")) {
+      normalizedArch = "arm64";
+    } else if (osArch.equals("x86") || osArch.equals("i386")) {
+      normalizedArch = "x86";
+    } else if (osArch.equals("armv7l") || osArch.contains("armv7")) {
+      normalizedArch = "arm32";
+    } else {
+      normalizedArch = osArch;
+    }
+
+    // Detect Android vs regular Linux
+    boolean isAndroid = System.getProperty("java.vendor", "").toLowerCase().contains("android") ||
+        System.getProperty("java.vm.name", "").toLowerCase().contains("dalvik") ||
+        System.getProperty("java.specification.vendor", "").toLowerCase().contains("android");
+
+    // Create platform-specific path
+    if (osName.contains("mac") || osName.contains("darwin")) {
+      return "darwin-" + normalizedArch;
+    } else if (osName.contains("windows")) {
+      return "windows-" + normalizedArch;
+    } else if (isAndroid) {
+      return "android-" + normalizedArch;
+    } else {
+      return "linux-" + normalizedArch;
     }
   }
 
@@ -392,22 +544,20 @@ public class Index implements AutoCloseable {
    */
   public static void main(String[] args) {
     try (
-      Index index = new Index.Config().metric("cos").dimensions(100).build()
-    ) {
+        Index index = new Index.Config().metric("cos").dimensions(100).build()) {
       index.size();
     }
     System.out.println("Java tests passed!");
   }
 
   private static native long c_create(
-    String metric,
-    String quantization,
-    long dimensions,
-    long capacity,
-    long connectivity,
-    long expansion_add,
-    long expansion_search
-  );
+      String metric,
+      String quantization,
+      long dimensions,
+      long capacity,
+      long connectivity,
+      long expansion_add,
+      long expansion_search);
 
   private static native long c_createFromFile(String path, boolean view);
 

@@ -9,7 +9,7 @@
 
 #define USEARCH_VERSION_MAJOR 2
 #define USEARCH_VERSION_MINOR 19
-#define USEARCH_VERSION_PATCH 1
+#define USEARCH_VERSION_PATCH 11
 
 // Inferring C++ version
 // https://stackoverflow.com/a/61552074
@@ -2177,6 +2177,20 @@ class index_gt {
             misaligned_store<compressed_slot_t>(tape_ + shift(n), slot);
             misaligned_store<neighbors_count_t>(tape_, n + 1);
         }
+        template <typename allow_slot_at> std::size_t erase_if(allow_slot_at&& allow_slot) noexcept {
+            std::size_t old_count = misaligned_load<neighbors_count_t>(tape_);
+            std::size_t removed_count = 0;
+            for (std::size_t i = 0; i < old_count; ++i) {
+                compressed_slot_t slot = misaligned_load<compressed_slot_t>(tape_ + shift(i));
+                if (allow_slot(slot)) {
+                    removed_count++;
+                } else {
+                    misaligned_store<compressed_slot_t>(tape_ + shift(i - removed_count), slot);
+                }
+            }
+            misaligned_store<neighbors_count_t>(tape_, old_count - removed_count);
+            return removed_count;
+        }
     };
 
     /**
@@ -2680,6 +2694,49 @@ class index_gt {
                 keys[i] = result.member.key;
             }
             return count;
+        }
+
+        /**
+         *  @brief  Extracts the search results into a user-provided buffer.
+         *  @return The number of results stored in the buffer.
+         *  @param[in] keys The buffer to store the keys of the search results.
+         *  @param[in] distances The buffer to store the distances to the search results.
+         *  @param[in] capacity The maximum number of results that can be stored in the buffers.
+         */
+        inline std::size_t dump_to(vector_key_t* keys, distance_t* distances, std::size_t capacity) const noexcept {
+            std::size_t i = 0;
+            std::size_t initialized_count = (std::min)(count, capacity);
+            for (; i != initialized_count; ++i) {
+                match_t result = operator[](i);
+                keys[i] = result.member.key;
+                distances[i] = result.distance;
+            }
+            for (; i != capacity; ++i) {
+                keys[i] = vector_key_t{};
+                distances[i] = std::numeric_limits<distance_t>::has_signaling_NaN
+                                   ? std::numeric_limits<distance_t>::signaling_NaN()
+                                   : std::numeric_limits<distance_t>::max();
+            }
+            return initialized_count;
+        }
+
+        /**
+         *  @brief  Extracts the search results into a user-provided buffer.
+         *  @return The number of results stored in the buffer.
+         *  @param[in] keys The buffer to store the keys of the search results.
+         *  @param[in] capacity The maximum number of results that can be stored in the buffers.
+         */
+        inline std::size_t dump_to(vector_key_t* keys, std::size_t capacity) const noexcept {
+            std::size_t i = 0;
+            std::size_t initialized_count = (std::min)(this->count, capacity);
+            for (; i != initialized_count; ++i) {
+                match_t result = operator[](i);
+                keys[i] = result.member.key;
+            }
+            for (; i != capacity; ++i)
+                keys[i] = vector_key_t{};
+
+            return initialized_count;
         }
     };
 
@@ -3654,14 +3711,10 @@ class index_gt {
             node_t node = node_at_(node_idx);
             for (level_t level = 0; level <= node.level(); ++level) {
                 neighbors_ref_t neighbors = neighbors_(node, level);
-                std::size_t old_size = neighbors.size();
-                neighbors.clear();
-                for (std::size_t i = 0; i != old_size; ++i) {
-                    compressed_slot_t neighbor_slot = neighbors[i];
+                neighbors.erase_if([&](compressed_slot_t neighbor_slot) {
                     node_t neighbor = node_at_(neighbor_slot);
-                    if (allow_member(member_cref_t{neighbor.ckey(), neighbor_slot}))
-                        neighbors.push_back(neighbor_slot);
-                }
+                    return !allow_member(member_cref_t{neighbor.ckey(), neighbor_slot});
+                });
             }
             ++processed;
             if (thread_idx == 0)

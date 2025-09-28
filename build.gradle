@@ -8,7 +8,7 @@ plugins {
     id 'signing'
 }
 
-group "cloud.unum"
+group = "cloud.unum"
 version = file("VERSION").text.trim()
 
 java {
@@ -29,7 +29,7 @@ sourceSets {
         // Ensure native libraries are included in the main source set
         resources {
             srcDirs "$buildDir/libs"
-            include "usearch/**"
+            include "usearch-native/**"
         }
     }
     test {
@@ -42,6 +42,12 @@ sourceSets {
 task sourcesJar(type: Jar, dependsOn: classes) {
     archiveClassifier.set('sources')
     from sourceSets.main.allSource
+}
+
+javadoc {
+    options.addStringOption('Xdoclint:all,-missing', '-quiet')
+    options.encoding = 'UTF-8'
+    options.charSet = 'UTF-8'
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
@@ -57,6 +63,7 @@ model {
 
     components {
         usearch(NativeLibrarySpec) {
+            baseName = "usearch_c"  // Matches the naming convention in CMake builds for convenience
             sources {
                 cpp {
                     source {
@@ -115,7 +122,7 @@ model {
 }
 
 test {
-    forkEvery 1
+    forkEvery = 1
 
     dependsOn jar
 
@@ -135,10 +142,13 @@ test {
 
 jar {
     dependsOn("usearchSharedLibrary")
+    
+    // Include all native libraries with their platform-specific directory structure
     from("$buildDir/libs/usearch/shared") {
-        include "libusearch.so", "libusearch.dylib", "libusearch.dll"
-        into "usearch"
+        include "**/*"
+        into "usearch-native"
     }
+    
     from sourceSets.main.output
 }
 
@@ -191,17 +201,23 @@ publishing {
     }
 
 
-    // Publishing to GitHub is much easier ;)
+    // Maven Central via central.sonatype.com would be great, but it doesn't support Gradle yet :(
+    // Info: https://central.sonatype.org/publish/publish-portal-gradle/
+    /*
     repositories {
         maven {
-            name = "OSSRH"
-            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            name = "MavenCentral"
+            url = "https://central.sonatype.com/api/v1/publisher/upload"
             credentials {
-                username = System.getenv("MAVEN_USERNAME")
-                password = System.getenv("MAVEN_PASSWORD")
+                username = System.getenv("MAVEN_CENTRAL_USERNAME") 
+                password = System.getenv("MAVEN_CENTRAL_TOKEN")
+            }
+            authentication {
+                basic(BasicAuthentication)
             }
         }
     }
+    */
 
     repositories {
         maven {
