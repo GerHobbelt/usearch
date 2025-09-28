@@ -27,7 +27,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Run TinySemVer
-        uses: ashvardanian/tinysemver@v2.0.7
+        uses: ashvardanian/tinysemver@v2.1.1
         with:
           verbose: "true"
           version-file: "VERSION"
@@ -368,7 +368,7 @@ jobs:
           echo "last_release_id=$(echo "$response" | jq -r '.id')" >> $GITHUB_OUTPUT
 
       - name: Download release assets
-        uses: robinraju/release-downloader@v1.8
+        uses: robinraju/release-downloader@v1.12
         with:
           latest: true
           fileName: "*"
@@ -420,12 +420,12 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["37", "38", "39", "310", "311", "312", "313"]
+        python-version: ['37', '38', '39', '310', '311', '312', '313', '313t']
     steps:
       - name: Check out refreshed version
         uses: actions/checkout@v4
         with:
-          ref: "main"
+          ref: 'main'
       - name: Setup Docker
         if: matrix.os == 'ubuntu-22.04'
         uses: crazy-max/ghaction-setup-docker@v1.0.0
@@ -442,6 +442,7 @@ jobs:
         run: cibuildwheel --output-dir wheelhouse
         env:
           CIBW_BUILD: cp${{ matrix.python-version }}-*
+          CIBW_ENABLE: cpython-freethreading # No-GIL 3.13t builds
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -481,14 +482,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch:
-          - x64
-          - x86
-        os:
-          - macos-latest
-          - ubuntu-22.04
-          # Windows pre-buld is not working
-          # - windows-latest
+        arch: [x64, x86]
+        # Windows pre-build is not working
+        # - windows-latest
+        os: [macos-latest, ubuntu-22.04]
         exclude:
           - arch: x86
             os: macos-latest
@@ -504,7 +501,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: "main"
-      - run: git submodule update --init --recursive
+      - name: Pull Git submodules
+        run: git submodule update --init --recursive
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -541,7 +539,7 @@ jobs:
           aarch64-linux-gnu-strip prebuilds/linux-arm64/*node
       - uses: actions/upload-artifact@v4
         with:
-          name: prebuilds
+          name: prebuilds-${{ matrix.os }}-${{ matrix.arch }}
           path: prebuilds
           retention-days: 1
 
@@ -564,7 +562,11 @@ jobs:
           node-version: 20
 
       - name: Download prebuilds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
+        with:
+          pattern: prebuilds-*
+          merge-multiple: true
+          path: javascript
 
       - name: Look for links
         run: find . -type f -links +1
@@ -758,7 +760,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: usearch-csharp-dependencies
+          name: usearch-csharp-dependencies-${{ matrix.os }}
           path: ${{ github.workspace }}/csharp/lib/**/*
 
   publish_csharp:
@@ -781,15 +783,16 @@ jobs:
         run: git submodule update --init --recursive
 
       - name: Download usearch libs artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: usearch-csharp-dependencies
+          pattern: usearch-csharp-dependencies-*
+          merge-multiple: true
           path: ${{ env.USEARCH_LIBS }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 7.0.x
+          dotnet-version: 8.0.x
 
       - name: Pack project
         run: |
@@ -861,21 +864,22 @@ jobs:
     if: ${{ always() }}
     needs: build_docs
     steps:
-      - uses: robinraju/release-downloader@v1.8
+      - name: Download release assets
+        uses: robinraju/release-downloader@v1.12
         with:
           latest: true
           fileName: docs.tar.gz
       - name: Unpack docs
         run: tar -xf ./docs.tar.gz
       - name: Setup GitHub Pages
-        uses: actions/configure-pages@v2
+        uses: actions/configure-pages@v5
       - name: Upload artifacts
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./build/docs/html
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
 
   deploy_docs_vercel:
     name: Deploy Vercel

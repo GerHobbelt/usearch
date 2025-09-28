@@ -116,7 +116,7 @@ I'd recommend putting the following breakpoints when debugging the code in GDB:
 - `__ubsan::ScopedReport::~ScopedReport` - to catch undefined behavior.
 - `__GI_exit` - to stop at exit points - the end of running any executable.
 - `__builtin_unreachable` - to catch all the places where the code is expected to be unreachable.
-- `__usearch_raise_runtime_error` - for USearch-specific assertions.
+- `usearch_raise_runtime_error` - for USearch-specific assertions.
 
 ### Cross Compilation
 
@@ -160,7 +160,15 @@ cmake --build build_artifacts --config Release
 
 Python bindings are built using PyBind11 and are available on [PyPi](https://pypi.org/project/usearch/).
 The compilation settings are controlled by the `setup.py` and are independent from CMake used for C/C++ builds.
-To install USearch locally:
+To install USearch locally using `uv`:
+
+```sh
+uv venv --python 3.11           # or your preferred Python version
+source .venv/bin/activate       # to activate the virtual environment
+uv pip install -e .             # to build locally from source
+```
+
+Or using `pip` directly:
 
 ```sh
 pip install -e .
@@ -226,10 +234,10 @@ nvm install 20
 Testing:
 
 ```sh
-npm install -g typescript
-npm install
-npm run build-js
-npm test
+npm install -g typescript   # Install TypeScript globally
+npm install                 # Compile `javascript/lib.cpp`
+npm run build-js            # Generate JS from TS
+npm test                    # Run the test suite
 ```
 
 To compile for AWS Lambda you'd need to recompile the binding.
