@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
 project(
     usearch
-    VERSION 2.19.11
+    VERSION 2.20.0
     LANGUAGES C CXX
     DESCRIPTION "Smaller & Faster Single-File Vector Search Engine from Unum"
     HOMEPAGE_URL "https://github.com/unum-cloud/usearch"
@@ -33,6 +33,7 @@ option(USEARCH_BUILD_TEST_CPP "Compile a native unit test in C++" ${USEARCH_IS_M
 option(USEARCH_BUILD_BENCH_CPP "Compile a native benchmark in C++" ${USEARCH_IS_MAIN_PROJECT})
 option(USEARCH_BUILD_LIB_C "Compile a native library for the C 99 interface" OFF)
 option(USEARCH_BUILD_TEST_C "Compile a test for the C 99 interface" OFF)
+option(USEARCH_BUILD_JNI "Compile JNI library for Java bindings" OFF)
 option(USEARCH_BUILD_WOLFRAM "Compile Wolfram Language bindings" OFF)
 option(USEARCH_BUILD_SQLITE "Compile separate SQLite extension" OFF)
 
@@ -331,9 +332,10 @@ function (setup_target TARGET_NAME)
         target_compile_options(${TARGET_NAME} PRIVATE -w -ferror-limit=1)
 
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        # MSVC has no O3 optimization level
         target_compile_options(${TARGET_NAME} PRIVATE /wd4068 /wd4996)
         target_compile_options(
-            ${TARGET_NAME} PRIVATE $<$<CONFIG:DEBUG>:/DEBUG> $<$<CONFIG:RELEASE>:/O3> $<$<CONFIG:RELWITHDEBINFO>:/O3
+            ${TARGET_NAME} PRIVATE $<$<CONFIG:DEBUG>:/DEBUG> $<$<CONFIG:RELEASE>:/O2> $<$<CONFIG:RELWITHDEBINFO>:/O2
                                    /DEBUG>
         )
     endif ()
@@ -404,6 +406,10 @@ endif ()
 
 if (${USEARCH_BUILD_LIB_C} OR ${USEARCH_BUILD_TEST_C})
     add_subdirectory(c)
+endif ()
+
+if (${USEARCH_BUILD_JNI})
+    add_subdirectory(java)
 endif ()
 
 if (${USEARCH_BUILD_SQLITE})

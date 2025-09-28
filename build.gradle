@@ -63,7 +63,7 @@ model {
 
     components {
         usearch(NativeLibrarySpec) {
-            baseName = "usearch_c"  // Matches the naming convention in CMake builds for convenience
+            baseName = "usearch_jni"  // JNI library for Java bindings
             sources {
                 cpp {
                     source {
@@ -150,6 +150,48 @@ jar {
     }
     
     from sourceSets.main.output
+}
+
+// Separate task for creating a fat JAR with all platform native libraries
+// This is used in CI/CD where we pre-download all platform libraries
+task fatJar(type: Jar) {
+    archiveClassifier = ''
+    archiveBaseName = 'usearch'
+    
+    from sourceSets.main.output
+    
+    // Include pre-built native libraries from all platforms
+    from("build/libs/usearch/shared") {
+        include "**/*"
+        into "usearch-native"
+    }
+    
+    manifest {
+        attributes 'Implementation-Title': 'USearch',
+                   'Implementation-Version': version
+    }
+    
+    // Log what we're packaging for transparency
+    doFirst {
+        def nativeDir = file("build/libs/usearch/shared")
+        println "Looking for native libraries in: ${nativeDir.absolutePath}"
+        println "Directory exists: ${nativeDir.exists()}"
+        if (nativeDir.exists()) {
+            def platforms = []
+            nativeDir.eachDir { platforms.add(it.name) }
+            println "Found ${platforms.size()} platform directories: ${platforms}"
+            if (platforms.size() > 0) {
+                println "Packaging native libraries for platforms: ${platforms.join(', ')}"
+            } else {
+                println "ERROR: Native library directory exists but contains no platform subdirectories"
+                println "Directory contents:"
+                nativeDir.eachFile { println "  - ${it.name} (${it.isDirectory() ? 'dir' : 'file'})" }
+                throw new GradleException("No platform directories found in build/libs/usearch/shared")
+            }
+        } else {
+            throw new GradleException("Native libraries directory not found at build/libs/usearch/shared - ensure native libraries are downloaded first")
+        }
+    }
 }
 
 signing {
