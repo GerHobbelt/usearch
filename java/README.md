@@ -2,7 +2,9 @@
 
 ## Installation
 
-For the most up-to-date version, automatically download from GitHub releases and build with Gradle:
+Installation via Maven Central is not supported due to Continuous Delivery complexity and poor support for native builds.
+Gradle installation is the recommended approach.
+For the most up-to-date version, the following Groovy script will download a "fat JAR" containing builds for Linux, Windows, macOS, and Android, compatible with all common hardware platforms:
 
 ```groovy
 repositories {
@@ -17,7 +19,7 @@ repositories {
 // Task to download USearch JAR from GitHub releases
 task downloadUSearchJar {
     doLast {
-        def usearchVersion = '2.20.0'
+        def usearchVersion = '2.20.9'
         def usearchUrl = "https://github.com/unum-cloud/usearch/releases/download/v${usearchVersion}/usearch-${usearchVersion}.jar"
         def usearchFile = file("lib/usearch-${usearchVersion}.jar")
         
@@ -36,7 +38,7 @@ compileJava.dependsOn downloadUSearchJar
 
 dependencies {
     // USearch JAR from local lib directory (downloaded automatically)
-    implementation name: 'usearch', version: '2.20.0', ext: 'jar'
+    implementation name: 'usearch', version: '2.20.9', ext: 'jar'
 }
 ```
 

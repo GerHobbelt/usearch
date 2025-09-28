@@ -1,4 +1,4 @@
-# USearch for GoLang
+# USearch for Go
 
 ## Installation
 
@@ -9,7 +9,7 @@ Substitute `<release_tag>`, `<arch>`, and `<usearch_version>` with your settings
 
 ```sh
 wget https://github.com/unum-cloud/usearch/releases/download/<release_tag>/usearch_linux_<arch>_<usearch_version>.deb
-dpkg -i usearch_<arch>_<usearch_version>.deb
+dpkg -i usearch_linux_<arch>_<usearch_version>.deb
 ```
 
 ### Windows
@@ -21,7 +21,7 @@ This will install the USearch library and include it in the same folder where th
 .\usearch\winlibinstaller.bat
 ```
 
-### MacOS
+### macOS
 
 Download and unpack the zip archive from the latest release.
 Move the USearch library and the include file to their respective folders.
@@ -44,7 +44,7 @@ go <go_version>
 
 2. Create an `example.go`:
 
-```golang
+```go
 package main
 
 import (
@@ -64,8 +64,10 @@ func main() {
    	}
    	defer index.Destroy()
 
-   	// Add to Index
+   	// Reserve capacity and configure internal threading
    	err = index.Reserve(uint(vectorsCount))
+   	_ = index.ChangeThreadsAdd(uint(runtime.NumCPU()))
+   	_ = index.ChangeThreadsSearch(uint(runtime.NumCPU()))
    	for i := 0; i < vectorsCount; i++ {
    		err = index.Add(usearch.Key(i), []float32{float32(i), float32(i + 1), float32(i + 2)})
       	if err != nil {
@@ -81,6 +83,10 @@ func main() {
    	fmt.Println(keys, distances)
 }
 ```
+
+Notes:
+- Always call `Reserve(capacity)` before the first write.
+- Prefer single-caller writes with internal parallelism via `ChangeThreadsAdd` and internal parallel searches via `ChangeThreadsSearch`, instead of calling `Add` concurrently.
 
 3. Get USearch:
 
