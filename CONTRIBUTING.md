@@ -163,15 +163,15 @@ The compilation settings are controlled by the `setup.py` and are independent fr
 To install USearch locally using `uv`:
 
 ```sh
-uv venv --python 3.11           # or your preferred Python version
-source .venv/bin/activate       # to activate the virtual environment
-uv pip install -e .             # to build locally from source
+uv venv --python 3.11                   # or your preferred Python version
+source .venv/bin/activate               # to activate the virtual environment
+uv pip install -e . --force-reinstall   # to build locally from source
 ```
 
 Or using `pip` directly:
 
 ```sh
-pip install -e .
+pip install -e . --force-reinstall
 ```
 
 For testing USearch uses PyTest, which is pre-configured in `pyproject.toml`.
@@ -182,16 +182,16 @@ Following options are enabled:
 - The `-p no:warnings` option will suppress and allow warnings.
 
 ```sh
-pip install pytest pytest-repeat            # for repeated fuzzy tests
-pytest                                      # if you trust the default settings
-pytest python/scripts/ -s -x -p no:warnings # to overwrite the default settings
+uv pip install pytest pytest-repeat numpy             # for repeated fuzzy tests
+python -m pytest                                      # if you trust the default settings
+python -m pytest python/scripts/ -s -x -p no:warnings # to overwrite the default settings
 ```
 
 Linting:
 
 ```sh
 pip install ruff
-ruff --format=github --select=E9,F63,F7,F82 --target-version=py37 python
+ruff --format=github --select=E9,F63,F7,F82 --target-version=py310 python
 ```
 
 Before merging your changes you may want to test your changes against the entire matrix of Python versions USearch supports.
@@ -285,6 +285,7 @@ The compilation settings are controlled by the `build.rs` and are independent fr
 
 ```sh
 cargo test -p usearch -- --nocapture --test-threads=1
+cargo clippy --all-targets --all-features
 ```
 
 Publishing the crate is a bit more complicated than normally.

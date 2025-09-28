@@ -4,7 +4,6 @@ from time import time
 import pytest
 import numpy as np
 
-import usearch
 from usearch.eval import random_vectors, self_recall, SearchStats
 from usearch.index import (
     Index,
@@ -204,6 +203,32 @@ def test_index_stats(batch_size):
     assert index.levels_stats[index.max_level].nodes > 0
 
 
+@pytest.mark.parametrize("use_view", [True, False])
+def test_index_load_from_buffer(use_view: bool, ndim: int = 3, batch_size: int = 10):
+    reset_randomness()
+
+    index = Index(ndim=ndim, multi=False)
+    keys = np.arange(batch_size)
+    vectors = random_vectors(count=batch_size, ndim=ndim)
+    index.add(keys, vectors, threads=threads)
+
+    buffer = index.save()
+    assert isinstance(buffer, bytearray)
+
+    def _test_load(obj):
+        index.clear()
+        assert len(index) == 0
+        index.view(obj) if use_view else index.load(obj)
+        assert len(index) == batch_size
+
+    _test_load(bytes(buffer))
+    _test_load(bytearray(buffer))
+    _test_load(memoryview(buffer))
+    _test_load(np.array(buffer))
+    with pytest.raises(TypeError):
+        _test_load(123)
+
+
 @pytest.mark.parametrize("ndim", [1, 3, 8, 32, 256, 4096])
 @pytest.mark.parametrize("batch_size", [0, 1, 7, 1024])
 @pytest.mark.parametrize("quantization", [ScalarKind.F32, ScalarKind.I8])
@@ -260,6 +285,37 @@ def test_index_save_load_restore_copy(ndim, quantization, batch_size):
     deserialized_index.reset()
     index.reset()
     os.remove("tmp.usearch")
+
+
+@pytest.mark.parametrize("ndim", [3, 8, 32, 256, 4096])
+@pytest.mark.parametrize("batch_size", [1, 7, 1024])
+@pytest.mark.parametrize("threads", [1, 3, 7, 150])
+def test_index_restore_multithread_search(ndim, batch_size, threads):
+
+    reset_randomness()
+    quantization = ScalarKind.F32
+    index = Index(ndim=ndim, dtype=quantization, multi=False)
+
+    if batch_size > 0:
+        keys = np.arange(batch_size)
+        vectors = random_vectors(count=batch_size, ndim=ndim, dtype=quantization)
+        index.add(keys, vectors, threads=threads)
+
+    query = random_vectors(count=batch_size, ndim=ndim, dtype=quantization)
+    k = min(batch_size, 10)
+
+    result_original = index.search(query, count=k, threads=threads)
+    dumped_index: bytes = index.save()
+    dumped_index_view = memoryview(dumped_index)
+
+    # When restoring from disk, search must not fail if using multiple threads.
+    index_restored = Index.restore(dumped_index, view=False)
+    result_restored = index_restored.search(query, count=k, threads=threads)
+    assert np.allclose(result_original.distances, result_restored.distances, atol=0.1)
+
+    index_viewed = Index.restore(dumped_index_view, view=True)
+    result_view = index_viewed.search(query, count=k, threads=threads)
+    assert np.allclose(result_original.distances, result_view.distances, atol=0.1)
 
 
 @pytest.mark.parametrize("batch_size", [32])
@@ -345,6 +401,16 @@ def test_index_clustering(ndim, metric, quantization, dtype, batch_size):
     clusters: Clustering = index.cluster(min_count=3, max_count=10, threads=threads)
     unique_clusters = set(clusters.matches.keys.flatten().tolist())
     assert len(unique_clusters) >= 3 and len(unique_clusters) <= 10
+
+
+def test_index_keys_iteration():
+    """Test that iterating over index.keys works without infinite loop."""
+    index = Index(ndim=3)
+    index.add(keys=[42], vectors=np.array([0.2, 0.3, 0.5]))
+
+    keys_list = list(index.keys)
+    assert len(keys_list) == 1
+    assert keys_list[0] == 42
 
 
 def test_index_copied_memory_usage():

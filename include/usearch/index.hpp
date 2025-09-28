@@ -8,8 +8,8 @@
 #define UNUM_USEARCH_HPP
 
 #define USEARCH_VERSION_MAJOR 2
-#define USEARCH_VERSION_MINOR 17
-#define USEARCH_VERSION_PATCH 12
+#define USEARCH_VERSION_MINOR 19
+#define USEARCH_VERSION_PATCH 1
 
 // Inferring C++ version
 // https://stackoverflow.com/a/61552074
@@ -1750,6 +1750,9 @@ class memory_mapped_file_t {
 #endif
     {
     }
+
+    memory_mapped_file_t(memory_mapped_file_t const&) = delete;
+    memory_mapped_file_t& operator=(memory_mapped_file_t const&) = delete;
 
     memory_mapped_file_t(byte_t* data, std::size_t length) noexcept : ptr_(data), length_(length) {}
 
