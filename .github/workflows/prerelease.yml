@@ -2,9 +2,9 @@ name: Pre-Release
 
 on:
   push:
-    branches: ['main-dev']
+    branches: ["main-dev"]
   pull_request:
-    branches: ['main-dev']
+    branches: ["main-dev"]
 
 env:
   GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
@@ -13,7 +13,7 @@ env:
   DOTNET_VERSION: 8.0.x
   NODE_VERSION: 20
   JAVA_VERSION: 21
-  GO_VERSION: '^1.21.0'
+  GO_VERSION: "^1.21.0"
   ANDROID_NDK_VERSION: 26.3.11579264
   ANDROID_SDK_VERSION: 21
 
@@ -27,15 +27,15 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Run TinySemVer
         uses: ashvardanian/tinysemver@v2.1.1
         with:
-          verbose: 'true'
-          version-file: 'VERSION'
+          verbose: "true"
+          version-file: "VERSION"
           update-version-in: |
             package.json:"version": "(\d+\.\d+\.\d+)"
             package-lock.json:"usearch",\n\s+"version": "(\d+\.\d+\.\d+)"
@@ -55,7 +55,7 @@ jobs:
             include/usearch/index.hpp:^#define USEARCH_VERSION_MINOR (\d+)
           update-patch-version-in: |
             include/usearch/index.hpp:^#define USEARCH_VERSION_PATCH (\d+)
-          dry-run: 'true'
+          dry-run: "true"
 
   test_ubuntu_gcc:
     name: Ubuntu (GCC 14)
@@ -65,7 +65,8 @@ jobs:
       CXX: g++
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
       - name: Pull Git submodules
         run: git submodule update --init --recursive
 
@@ -83,7 +84,7 @@ jobs:
 
         # Python
       - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Build Python
@@ -97,7 +98,7 @@ jobs:
 
         # JavaScript
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Install dependencies
@@ -123,9 +124,9 @@ jobs:
         uses: actions/setup-java@v5
         with:
           java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'adopt'
+          distribution: "adopt"
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2.4.2
+        uses: gradle/actions/setup-gradle@v5
       - name: Check Java formatting
         run: gradle spotlessCheck
       - name: Test Java
@@ -133,7 +134,7 @@ jobs:
 
         # C#
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Test .NET
@@ -161,7 +162,8 @@ jobs:
       CXX: clang++
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
       - name: Pull Git submodules
         run: git submodule update --init --recursive
 
@@ -180,7 +182,7 @@ jobs:
 
         # JavaScript
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Install dependencies
@@ -192,7 +194,7 @@ jobs:
 
         # Python
       - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Build Python
@@ -220,7 +222,7 @@ jobs:
 
         # C#
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Test .NET
@@ -236,7 +238,8 @@ jobs:
     runs-on: macos-15
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
       - name: Pull Git submodules
         run: git submodule update --init --recursive
 
@@ -254,7 +257,7 @@ jobs:
 
         # JavaScript
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Install dependencies
@@ -266,7 +269,7 @@ jobs:
 
         # Python
       - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Build Python
@@ -299,24 +302,23 @@ jobs:
 
         # C#
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Test .NET
         run: |
           mkdir -p "${{ github.workspace }}/csharp/lib/runtimes/osx-arm64/native"
           cp "${{ github.workspace }}/build_artifacts/libusearch_c.dylib" "${{ github.workspace }}/csharp/lib/runtimes/osx-arm64/native"
-          dotnet test -c Debug --logger "console;verbosity=detailed" --filter "FullyQualifiedName!=Cloud.Unum.USearch.Tests.UsearchIndexTests.PersistAndRestore"
+          dotnet test -c Debug --logger "console;verbosity=minimal" --filter "FullyQualifiedName!=Cloud.Unum.USearch.Tests.UsearchIndexTests.PersistAndRestore"
         shell: bash
         working-directory: ${{ github.workspace }}/csharp
-        env:
-          DYLD_PRINT_LIBRARIES: 1
 
   test_windows_x86:
     name: Windows (x86)
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
       - name: Pull Git submodules
         run: git submodule update --init --recursive
 
@@ -333,7 +335,7 @@ jobs:
 
         # Python
       - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Build Python
@@ -346,7 +348,7 @@ jobs:
 
         # JavaScript
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Install dependencies
@@ -369,7 +371,7 @@ jobs:
 
         # C#
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Test .NET
@@ -384,7 +386,8 @@ jobs:
     name: Windows (Arm)
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
       - name: Pull Git submodules
         run: git submodule update --init --recursive
 
@@ -407,7 +410,8 @@ jobs:
     name: Docker
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
       - name: Pull Git submodules
         run: git submodule update --init --recursive
       - name: Build
@@ -431,11 +435,12 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-24.04, macos-14, windows-2022]
-        python-version: ['38', '39', '310', '311', '312', '313', '313t']
+        python-version: ["38", "39", "310", "311", "312", "313", "313t"]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.x
 
@@ -471,7 +476,8 @@ jobs:
             target: aarch64-linux-gnu
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
       - name: Pull Git submodules
         run: git submodule update --init --recursive
 
@@ -520,7 +526,8 @@ jobs:
             target: aarch64-linux-android
             arch: arm64
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
       - name: Pull Git submodules
         run: git submodule update --init --recursive
 
@@ -573,7 +580,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'adopt'
+          distribution: "adopt"
 
         # We skip native compilation with Gradle and focus just on the Java part,
         # assuming the we won't be able to tun the tests without emulation
