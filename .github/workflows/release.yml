@@ -836,7 +836,7 @@ jobs:
         # NPM installation fails spuriously all the time
       - name: Install Dependencies
         run: |
-          npm ci --ignore-scripts || npm ci --ignore-scripts || npm ci --ignore-scripts
+          npm install --ignore-scripts
       - run: npm run prebuild-single
         if: matrix.os != 'macos-14'
       - run: npm run prebuild-darwin-x64+arm64
@@ -868,7 +868,13 @@ jobs:
   publish_javascript:
     name: Publish JavaScript
     needs: build_javascript
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
+    environment:
+      name: npm-usearch
+      url: https://www.npmjs.com/package/usearch
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Check out refreshed version
@@ -881,7 +887,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Download prebuilds
         uses: actions/download-artifact@v6
@@ -896,7 +903,7 @@ jobs:
         # NPM installation fails spuriously all the time
       - name: Install Dependencies
         run: |
-          npm ci --ignore-scripts || npm ci --ignore-scripts || npm ci --ignore-scripts
+          npm install --ignore-scripts
 
       - name: Build the JS from TS
         run: npm run build-js
@@ -908,10 +915,7 @@ jobs:
         run: npm publish --dry-run
 
       - name: Publish
-        uses: JS-DevTools/npm-publish@v3
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
+        run: npm publish --provenance --access public
 
   publish_rust:
     name: Publish Rust
@@ -1236,7 +1240,7 @@ jobs:
         # NPM installation fails spuriously all the time
       - name: Build CJS JS
         run: |
-          npm ci --ignore-scripts || npm ci --ignore-scripts || npm ci --ignore-scripts
+          npm install --ignore-scripts
           npm run build-js
       - name: Build documentation
         run: cd docs && doxygen conf.dox && make html
