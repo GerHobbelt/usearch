@@ -22,6 +22,26 @@ pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
+/// Returns a comma-separated list of ISAs compiled into this binary.
+pub fn hardware_acceleration_compiled() -> String {
+    use core::ffi::CStr;
+    unsafe {
+        CStr::from_ptr(ffi::hardware_acceleration_compiled())
+            .to_string_lossy()
+            .into_owned()
+    }
+}
+
+/// Returns a comma-separated list of ISAs available at runtime (compiled AND supported by CPU).
+pub fn hardware_acceleration_available() -> String {
+    use core::ffi::CStr;
+    unsafe {
+        CStr::from_ptr(ffi::hardware_acceleration_available())
+            .to_string_lossy()
+            .into_owned()
+    }
+}
+
 /// The key type used to identify vectors in the index.
 /// It is a 64-bit unsigned integer.
 pub type Key = u64;
@@ -301,6 +321,24 @@ pub mod ffi {
         distances: Vec<f32>,
     }
 
+    /// Detailed memory statistics with separate breakdowns for the graph
+    /// and vectors allocator tapes.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    struct MemoryStats {
+        /// Total memory allocated by the graph structure allocator, in bytes.
+        graph_allocated: usize,
+        /// Memory wasted due to alignment in the graph allocator, in bytes.
+        graph_wasted: usize,
+        /// Reserved but unused memory in the graph allocator, in bytes.
+        graph_reserved: usize,
+        /// Total memory allocated by the vectors data allocator, in bytes.
+        vectors_allocated: usize,
+        /// Memory wasted due to alignment in the vectors allocator, in bytes.
+        vectors_wasted: usize,
+        /// Reserved but unused memory in the vectors allocator, in bytes.
+        vectors_reserved: usize,
+    }
+
     /// The index options used to configure the dense index during creation.
     /// It contains the number of dimensions, the metric kind, the scalar kind,
     /// the connectivity, the expansion values, and the multi-flag.
@@ -318,6 +356,9 @@ pub mod ffi {
     // C++ types and signatures exposed to Rust.
     unsafe extern "C++" {
         include!("lib.hpp");
+
+        pub fn hardware_acceleration_compiled() -> *const c_char;
+        pub fn hardware_acceleration_available() -> *const c_char;
 
         /// Low-level C++ interface that is further wrapped into the high-level `Index`
         type NativeIndex;
@@ -423,6 +464,7 @@ pub mod ffi {
         pub fn view(self: &NativeIndex, path: &str) -> Result<()>;
         pub fn reset(self: &NativeIndex) -> Result<()>;
         pub fn memory_usage(self: &NativeIndex) -> usize;
+        pub fn memory_stats(self: &NativeIndex) -> MemoryStats;
         pub fn hardware_acceleration(self: &NativeIndex) -> *const c_char;
 
         pub fn save_to_buffer(self: &NativeIndex, buffer: &mut [u8]) -> Result<()>;
@@ -432,7 +474,7 @@ pub mod ffi {
 }
 
 // Re-export the FFI structs and enums at the crate root for easy access
-pub use ffi::{IndexOptions, MetricKind, ScalarKind};
+pub use ffi::{IndexOptions, MemoryStats, MetricKind, ScalarKind};
 
 /// Represents custom metric functions for calculating distances between vectors in various formats.
 ///
@@ -957,12 +999,9 @@ impl VectorType for f16 {
         // Temporarily cast the closure to a raw pointer for passing.
         let trampoline_fn: usize = trampoline::<F> as *const () as usize;
         let closure_address: usize = &filter as *const F as usize;
-        index.inner.filtered_search_f16(
-            f16::to_i16s(query),
-            count,
-            trampoline_fn,
-            closure_address,
-        )
+        index
+            .inner
+            .filtered_search_f16(f16::to_i16s(query), count, trampoline_fn, closure_address)
     }
 
     fn change_metric(
@@ -1035,12 +1074,9 @@ impl VectorType for b1x8 {
         // Temporarily cast the closure to a raw pointer for passing.
         let trampoline_fn: usize = trampoline::<F> as *const () as usize;
         let closure_address: usize = &filter as *const F as usize;
-        index.inner.filtered_search_b1x8(
-            b1x8::to_u8s(query),
-            count,
-            trampoline_fn,
-            closure_address,
-        )
+        index
+            .inner
+            .filtered_search_b1x8(b1x8::to_u8s(query), count, trampoline_fn, closure_address)
     }
 
     fn change_metric(
@@ -1374,6 +1410,12 @@ impl Index {
     /// In practice, its error will be below 10%.
     pub fn memory_usage(self: &Index) -> usize {
         self.inner.memory_usage()
+    }
+
+    /// Returns detailed memory statistics with separate breakdowns for the graph
+    /// and vectors allocator tapes.
+    pub fn memory_stats(self: &Index) -> ffi::MemoryStats {
+        self.inner.memory_stats()
     }
 
     /// Saves the index to a specified file.
@@ -1926,7 +1968,7 @@ mod tests {
     #[test]
     fn test_concurrency() {
         use fork_union as fu;
-        use rand::{Rng, SeedableRng};
+        use rand::{RngExt, SeedableRng};
         use rand_chacha::ChaCha8Rng;
         use rand_distr::Uniform;
         use std::sync::Arc;

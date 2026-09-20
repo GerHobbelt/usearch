@@ -40,9 +40,13 @@ from usearch.compiled import (
     DEFAULT_EXPANSION_SEARCH,
     # Dependencies:
     USES_OPENMP,
-    USES_FP16LIB,
+    USES_NUMKONG,
     USES_SIMSIMD,
+    USES_NUMKONG_DYNAMIC_DISPATCH,
     USES_SIMSIMD_DYNAMIC_DISPATCH,
+    # Hardware capabilities:
+    hardware_acceleration_compiled,
+    hardware_acceleration_available,
 )
 
 __version__ = f"{VERSION_MAJOR}.{VERSION_MINOR}.{VERSION_PATCH}"
@@ -68,7 +72,7 @@ class BinaryManager:
 
     @staticmethod
     def determine_download_url(version: str, filename: str) -> str:
-        base_url = "https://github.com/unum-cloud/usearch/releases/download"
+        base_url = "https://github.com/unum-cloud/USearch/releases/download"
         url = f"{base_url}/v{version}/{filename}"
         return url
 
