@@ -9,7 +9,7 @@
 
 #define USEARCH_VERSION_MAJOR 2
 #define USEARCH_VERSION_MINOR 25
-#define USEARCH_VERSION_PATCH 1
+#define USEARCH_VERSION_PATCH 2
 
 // Inferring C++ version
 // https://stackoverflow.com/a/61552074
@@ -1521,24 +1521,47 @@ struct index_config_t {
 };
 
 /**
+ *  @brief  Tag type selecting the "no upfront reservation" overload of
+ *          @ref index_limits_t.  Modeled after @c std::defer_lock: the
+ *          resulting limits are all-zero and produce no allocations when
+ *          handed to @ref index_dense_gt::try_reserve.
+ */
+struct unreserved_t {};
+constexpr unreserved_t unreserved{};
+
+/**
  *  @brief  Growth settings for the index container.
  *          Includes the upper bound for `::members` capacity,
  *          and the number of read/write threads expected to work with the index.
  */
 struct index_limits_t {
     /// @brief Maximum number of entries in the index.
-    std::size_t members = 0;
+    std::size_t members;
     /// @brief Max number of threads simultaneously updating entries.
-    std::size_t threads_add = std::thread::hardware_concurrency();
+    std::size_t threads_add;
     /// @brief Max number of threads simultaneously searching entries.
-    std::size_t threads_search = std::thread::hardware_concurrency();
+    std::size_t threads_search;
 
     inline index_limits_t(std::size_t n, std::size_t t) noexcept : members(n), threads_add(t), threads_search(t) {}
-    inline index_limits_t(std::size_t n = 0) noexcept : index_limits_t(n, std::thread::hardware_concurrency()) {}
+    inline index_limits_t(std::size_t n = 0) noexcept
+        : index_limits_t(n, (std::max<std::size_t>)(1, std::thread::hardware_concurrency())) {}
+    inline index_limits_t(unreserved_t) noexcept : members(0), threads_add(0), threads_search(0) {}
     /// @brief Returns the upper limit for the number of threads.
     inline std::size_t threads() const noexcept { return (std::max)(threads_add, threads_search); }
     /// @brief Returns the concurrency-level of the index - the minimum of thread counts.
     inline std::size_t concurrency() const noexcept { return (std::min)(threads_add, threads_search); }
+    /// @brief Returns a copy with zero thread counts replaced by the library default.
+    ///        Use when carrying limits forward across operations that may have left
+    ///        @c threads_add / @c threads_search unset (e.g. @c unreserved construction).
+    inline index_limits_t with_thread_defaults() const noexcept {
+        index_limits_t result = *this;
+        index_limits_t const defaults;
+        if (!result.threads_add)
+            result.threads_add = defaults.threads_add;
+        if (!result.threads_search)
+            result.threads_search = defaults.threads_search;
+        return result;
+    }
 };
 
 struct index_update_config_t {
@@ -2546,6 +2569,114 @@ class index_gt {
     member_cref_t at(compressed_slot_t slot) const noexcept { return {nodes_[slot].ckey(), slot}; }
     member_iterator_t iterator_at(compressed_slot_t slot) noexcept { return {this, slot}; }
     member_citerator_t citerator_at(compressed_slot_t slot) const noexcept { return {this, slot}; }
+
+    /**
+     *  @brief  A read-only random-access range over the neighbors of a single
+     *          node at a single graph level. Dereferencing yields a `member_cref_t`,
+     *          so callers can chain traversals without touching internal slots.
+     *
+     *  @warning The range aliases the node's adjacency tape. It is only valid
+     *           while the index is not being mutated. Prefer immutable indexes
+     *           (see `is_immutable()`) or guarantee no concurrent `add`/`update`/
+     *           `remove` while the view is alive.
+     */
+    class neighbors_view_t {
+        index_gt const* index_{};
+        neighbors_ref_t neighbors_{nullptr};
+
+      public:
+        class const_iterator {
+            index_gt const* index_{};
+            misaligned_ptr_gt<compressed_slot_t const> position_{nullptr};
+
+          public:
+            using iterator_category = std::random_access_iterator_tag;
+            using value_type = member_cref_t;
+            using difference_type = std::ptrdiff_t;
+            using pointer = void;
+            using reference = member_cref_t;
+
+            const_iterator() noexcept = default;
+            const_iterator(index_gt const* index, misaligned_ptr_gt<compressed_slot_t const> position) noexcept
+                : index_(index), position_(position) {}
+
+            reference operator*() const noexcept {
+                compressed_slot_t slot = static_cast<compressed_slot_t>(*position_);
+                return {index_->node_at_(slot).ckey(), slot};
+            }
+            compressed_slot_t slot() const noexcept { return static_cast<compressed_slot_t>(*position_); }
+
+            // clang-format off
+            const_iterator& operator++() noexcept { ++position_; return *this; }
+            const_iterator operator++(int) noexcept { const_iterator old = *this; ++position_; return old; }
+            const_iterator& operator--() noexcept { --position_; return *this; }
+            const_iterator operator--(int) noexcept { const_iterator old = *this; --position_; return old; }
+            const_iterator& operator+=(difference_type d) noexcept { position_ = position_ + d; return *this; }
+            const_iterator& operator-=(difference_type d) noexcept { position_ = position_ - d; return *this; }
+            const_iterator operator+(difference_type d) const noexcept { return {index_, position_ + d}; }
+            const_iterator operator-(difference_type d) const noexcept { return {index_, position_ - d}; }
+            difference_type operator-(const_iterator const& other) const noexcept { return position_ - other.position_; }
+            bool operator==(const_iterator const& other) const noexcept { return position_ == other.position_; }
+            bool operator!=(const_iterator const& other) const noexcept { return position_ != other.position_; }
+            // clang-format on
+        };
+
+        using iterator = const_iterator;
+        using value_type = member_cref_t;
+        using size_type = std::size_t;
+
+        neighbors_view_t() noexcept = default;
+        neighbors_view_t(index_gt const* index, neighbors_ref_t neighbors) noexcept
+            : index_(index), neighbors_(neighbors) {}
+
+        std::size_t size() const noexcept { return index_ ? neighbors_.size() : 0; }
+        bool empty() const noexcept { return size() == 0; }
+        member_cref_t operator[](std::size_t offset) const noexcept {
+            compressed_slot_t slot = neighbors_[offset];
+            return {index_->node_at_(slot).ckey(), slot};
+        }
+        const_iterator begin() const noexcept {
+            return index_ ? const_iterator{index_, neighbors_.begin()} : const_iterator{};
+        }
+        const_iterator end() const noexcept {
+            return index_ ? const_iterator{index_, neighbors_.end()} : const_iterator{};
+        }
+        const_iterator cbegin() const noexcept { return begin(); }
+        const_iterator cend() const noexcept { return end(); }
+    };
+
+    /**
+     *  @brief  Returns a read-only range over the neighbors of the node at @p slot
+     *          in the graph @p level. Returned view is empty when @p level exceeds
+     *          the node's level.
+     */
+    neighbors_view_t neighbors(compressed_slot_t slot, std::size_t level) const noexcept {
+        node_t node = node_at_(slot);
+        if (static_cast<level_t>(level) > node.level())
+            return {};
+        return {this, neighbors_(node, static_cast<level_t>(level))};
+    }
+
+    /**
+     *  @brief  Returns a read-only range over the neighbors of the node referenced
+     *          by @p member at the graph @p level.
+     */
+    neighbors_view_t neighbors(member_citerator_t member, std::size_t level) const noexcept {
+        return neighbors(get_slot(member), level);
+    }
+
+    /**
+     *  @brief  Returns the top graph level at which the node at @p slot is present.
+     */
+    std::size_t level_of(compressed_slot_t slot) const noexcept {
+        return static_cast<std::size_t>(static_cast<level_t>(node_at_(slot).level()));
+    }
+
+    /**
+     *  @brief  Returns the top graph level at which the node referenced by @p member
+     *          is present.
+     */
+    std::size_t level_of(member_citerator_t member) const noexcept { return level_of(get_slot(member)); }
 
     dynamic_allocator_t const& dynamic_allocator() const noexcept { return dynamic_allocator_; }
     tape_allocator_t const& tape_allocator() const noexcept { return tape_allocator_; }
