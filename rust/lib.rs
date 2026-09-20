@@ -278,7 +278,7 @@ pub mod ffi {
         IP,
         /// The squared Euclidean Distance metric, defined as `L2 = sum((a[i] - b[i])^2)`.
         L2sq,
-        /// The Cosine Similarity metric, defined as `Cos = 1 - sum(a[i] * b[i]) / (sqrt(sum(a[i]^2) * sqrt(sum(b[i]^2)))`.
+        /// The Cosine Distance metric, defined as `Cos = 1 - sum(a[i] * b[i]) / (sqrt(sum(a[i]^2)) * sqrt(sum(b[i]^2)))`.
         Cos,
         /// The Pearson Correlation metric.
         Pearson,
@@ -303,10 +303,14 @@ pub mod ffi {
         F64,
         /// 32-bit single-precision IEEE 754 floating-point number.
         F32,
-        /// 16-bit half-precision IEEE 754 floating-point number (different from `bf16`).
-        F16,
         /// 16-bit brain floating-point number.
         BF16,
+        /// 16-bit half-precision IEEE 754 floating-point number (different from `bf16`).
+        F16,
+        /// 8-bit floating point: 1 sign + 5 exponent + 2 mantissa.
+        E5M2,
+        /// 8-bit floating point: 1 sign + 4 exponent + 3 mantissa.
+        E4M3,
         /// 8-bit signed integer.
         I8,
         /// 1-bit binary value, packed 8 per byte.
@@ -1495,7 +1499,7 @@ mod tests {
             env::var("RUST_VERSION").unwrap_or_else(|_| "unknown".into())
         );
 
-        // Create indexes with different configurations
+        // Create indexes with different configurations, ordered by descending dynamic range
         let f64_index = Index::new(&IndexOptions {
             dimensions: 256,
             metric: MetricKind::Cos,
@@ -1512,10 +1516,34 @@ mod tests {
         })
         .unwrap();
 
+        let bf16_index = Index::new(&IndexOptions {
+            dimensions: 256,
+            metric: MetricKind::Cos,
+            quantization: ScalarKind::BF16,
+            ..Default::default()
+        })
+        .unwrap();
+
         let f16_index = Index::new(&IndexOptions {
             dimensions: 256,
             metric: MetricKind::Cos,
             quantization: ScalarKind::F16,
+            ..Default::default()
+        })
+        .unwrap();
+
+        let e5m2_index = Index::new(&IndexOptions {
+            dimensions: 256,
+            metric: MetricKind::Cos,
+            quantization: ScalarKind::E5M2,
+            ..Default::default()
+        })
+        .unwrap();
+
+        let e4m3_index = Index::new(&IndexOptions {
+            dimensions: 256,
+            metric: MetricKind::Cos,
+            quantization: ScalarKind::E4M3,
             ..Default::default()
         })
         .unwrap();
@@ -1545,8 +1573,20 @@ mod tests {
             f32_index.hardware_acceleration()
         );
         println!(
+            "bf16 hardware acceleration: {}",
+            bf16_index.hardware_acceleration()
+        );
+        println!(
             "f16 hardware acceleration: {}",
             f16_index.hardware_acceleration()
+        );
+        println!(
+            "e5m2 hardware acceleration: {}",
+            e5m2_index.hardware_acceleration()
+        );
+        println!(
+            "e4m3 hardware acceleration: {}",
+            e4m3_index.hardware_acceleration()
         );
         println!(
             "i8 hardware acceleration: {}",
