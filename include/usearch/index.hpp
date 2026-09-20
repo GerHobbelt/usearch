@@ -8,8 +8,8 @@
 #define UNUM_USEARCH_HPP
 
 #define USEARCH_VERSION_MAJOR 2
-#define USEARCH_VERSION_MINOR 25
-#define USEARCH_VERSION_PATCH 2
+#define USEARCH_VERSION_MINOR 26
+#define USEARCH_VERSION_PATCH 0
 
 // Inferring C++ version
 // https://stackoverflow.com/a/61552074
@@ -1275,6 +1275,31 @@ template <typename element_at> element_at default_free_value() { return default_
  */
 template <typename element_at> struct hash_gt {
     std::size_t operator()(element_at const& element) const noexcept { return std::hash<element_at>{}(element); }
+};
+
+/**
+ *  @brief  SplitMix64 finalizer, used to scatter integer keys before masking.
+ *
+ *  On libstdc++ and libc++ `std::hash` is the identity for integers. Our open-addressing
+ *  tables mask that hash into a power-of-2 slot count and probe linearly until an @b empty
+ *  slot, so consecutive keys land in adjacent slots and merge into one contiguous run.
+ *  Both insertions and lookups then scan that run end-to-end, which is quadratic overall:
+ *  a dense ascending key range collapses insertion throughput by three orders of magnitude.
+ *  Mixing costs ~20ns per key and is dwarfed by the graph traversal in `add`.
+ */
+template <> struct hash_gt<std::uint64_t> {
+    std::size_t operator()(std::uint64_t const& element) const noexcept {
+        std::uint64_t x = element;
+        x = (x ^ (x >> 30u)) * 0xBF58476D1CE4E5B9ULL;
+        x = (x ^ (x >> 27u)) * 0x94D049BB133111EBULL;
+        return static_cast<std::size_t>(x ^ (x >> 31u));
+    }
+};
+
+template <> struct hash_gt<std::int64_t> {
+    std::size_t operator()(std::int64_t const& element) const noexcept {
+        return hash_gt<std::uint64_t>{}(static_cast<std::uint64_t>(element));
+    }
 };
 
 template <> struct hash_gt<uint40_t> {
@@ -2543,6 +2568,14 @@ class index_gt {
     /// @brief  Array of thread-specific buffers for temporary data.
     mutable buffer_gt<context_t, contexts_allocator_t> contexts_{};
 
+    context_t* context_or_null_(std::size_t thread) noexcept {
+        return thread < contexts_.size() ? contexts_.data() + thread : nullptr;
+    }
+
+    context_t const* context_or_null_(std::size_t thread) const noexcept {
+        return thread < contexts_.size() ? contexts_.data() + thread : nullptr;
+    }
+
   public:
     std::size_t connectivity() const noexcept { return config_.connectivity; }
     std::size_t capacity() const noexcept { return nodes_capacity_; }
@@ -3156,7 +3189,10 @@ class index_gt {
             return result.failed("Can't add to an immutable index");
 
         // Make sure we have enough local memory to perform this request
-        context_t& context = contexts_[config.thread];
+        context_t* context_ptr = context_or_null_(config.thread);
+        if (!context_ptr)
+            return result.failed("Reserve capacity ahead of insertions!");
+        context_t& context = *context_ptr;
         top_candidates_t& top = context.top_candidates;
         next_candidates_t& next = context.next_candidates;
         top.clear();
@@ -3294,7 +3330,10 @@ class index_gt {
         compressed_slot_t updated_slot = iterator.slot_;
 
         // Make sure we have enough local memory to perform this request
-        context_t& context = contexts_[config.thread];
+        context_t* context_ptr = context_or_null_(config.thread);
+        if (!context_ptr)
+            return result.failed("Reserve capacity ahead of updates!");
+        context_t& context = *context_ptr;
         top_candidates_t& top = context.top_candidates;
         next_candidates_t& next = context.next_candidates;
         top.clear();
@@ -3931,6 +3970,10 @@ class index_gt {
                                                  : checked_size_overflow();
         if (!first_offset)
             return result.failed("Index is too large");
+        if (file.size() < first_offset.value) {
+            reset();
+            return result.failed("File is corrupted and can't fit the node levels");
+        }
         offsets[0u] = first_offset.value;
         for (std::size_t i = 1; i < header_size.value; ++i) {
             checked_size_result_t next_offset = checked_add(offsets[i - 1], node_bytes_(levels[i - 1]));

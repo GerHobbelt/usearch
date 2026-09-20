@@ -550,6 +550,9 @@ class index_dense_gt {
             : parent(other.parent), thread_id(other.thread_id), engaged(other.engaged) {
             other.engaged = false;
         }
+        explicit operator bool() const noexcept {
+            return parent.typed_ && thread_id != any_thread() && thread_id < parent.typed_->limits().threads();
+        }
     };
 
   public:
@@ -1016,6 +1019,8 @@ class index_dense_gt {
 
         index_cluster_config_t cluster_config;
         thread_lock_t lock = thread_lock_(thread);
+        if (!lock)
+            return cluster_result_t{}.failed("Reserve capacity ahead of searches!");
         cluster_config.thread = lock.thread_id;
         cluster_config.expansion = config_.expansion_search;
         metric_proxy_t metric{*this};
@@ -1045,17 +1050,18 @@ class index_dense_gt {
      */
     bool try_reserve(index_limits_t limits) {
 
+        // Reserving is monotonic: reducing thread limits must not shrink member-addressed storage.
+        limits.members = (std::max)(limits.members, typed_->capacity());
+        limits.members = (std::max)(limits.members, vectors_lookup_.size());
+
         // The slot lookup system will generally prefer power-of-two sizes.
         if (config_.enable_key_lookups) {
             unique_lock_t lock(slot_lookup_mutex_);
             if (!slot_lookup_.try_reserve(limits.members))
                 return false;
-            limits.members = slot_lookup_.capacity();
         }
 
-        // Once the `slot_lookup_` grows, let's use its capacity as the new
-        // target for the `vectors_lookup_` to synchronize allocations and
-        // expensive index re-organizations.
+        // Hash-table load-factor slack does not need corresponding vector or graph slots.
         if (limits.members != vectors_lookup_.size()) {
             vectors_lookup_t new_vectors_lookup(limits.members);
             if (!new_vectors_lookup)
@@ -1353,6 +1359,11 @@ class index_dense_gt {
         if (!result)
             return result;
 
+        // `offset` is caller-supplied, so every `file.size() - offset` below would
+        // otherwise underflow into a huge span instead of failing.
+        if (offset > file.size())
+            return result.failed("File is corrupted and lacks matrix dimensions");
+
         // Infer the new index size
         std::uint64_t matrix_rows = 0;
         std::uint64_t matrix_cols = 0;
@@ -1378,7 +1389,12 @@ class index_dense_gt {
                 matrix_cols = dimensions[1];
                 offset += sizeof(dimensions);
             }
-            vectors_buffer = {file.data() + offset, static_cast<std::size_t>(matrix_rows * matrix_cols)};
+            // bound the vectors matrix span against the file (overflow-safe; offset <= file.size() holds here)
+            checked_size_result_t vectors_bytes =
+                checked_mul(static_cast<std::size_t>(matrix_rows), static_cast<std::size_t>(matrix_cols));
+            if (!vectors_bytes || file.size() - offset < vectors_bytes.value)
+                return result.failed("File is corrupted: vectors matrix exceeds file size");
+            vectors_buffer = {file.data() + offset, vectors_bytes.value};
             offset += vectors_buffer.size();
         }
 
@@ -2136,10 +2152,9 @@ class index_dense_gt {
         if (thread_id != any_thread())
             return {*this, thread_id, false};
 
-        available_threads_mutex_.lock();
-        usearch_assert_m(available_threads_.size(), "No available threads to lock");
-        available_threads_.try_pop(thread_id);
-        available_threads_mutex_.unlock();
+        std::unique_lock<std::mutex> lock(available_threads_mutex_);
+        if (!available_threads_.try_pop(thread_id))
+            return {*this, any_thread(), false};
         return {*this, thread_id, true};
     }
 
@@ -2160,6 +2175,8 @@ class index_dense_gt {
 
         // Cast the vector, if needed for compatibility with `metric_`
         thread_lock_t lock = thread_lock_(thread);
+        if (!lock)
+            return add_result_t{}.failed("Reserve capacity ahead of insertions!");
         byte_t const* vector_data = reinterpret_cast<byte_t const*>(vector);
         {
             byte_t* casted_data = cast_buffer_.data() + metric_.bytes_per_vector() * lock.thread_id;
@@ -2213,6 +2230,8 @@ class index_dense_gt {
 
         // Cast the vector, if needed for compatibility with `metric_`
         thread_lock_t lock = thread_lock_(thread);
+        if (!lock)
+            return search_result_t{*this}.failed("Reserve capacity ahead of searches!");
         byte_t const* vector_data = reinterpret_cast<byte_t const*>(vector);
         {
             byte_t* casted_data = cast_buffer_.data() + metric_.bytes_per_vector() * lock.thread_id;
@@ -2249,6 +2268,8 @@ class index_dense_gt {
 
         // Cast the vector, if needed for compatibility with `metric_`
         thread_lock_t lock = thread_lock_(thread);
+        if (!lock)
+            return cluster_result_t{}.failed("Reserve capacity ahead of searches!");
         byte_t const* vector_data = reinterpret_cast<byte_t const*>(vector);
         {
             byte_t* casted_data = cast_buffer_.data() + metric_.bytes_per_vector() * lock.thread_id;
@@ -2273,6 +2294,8 @@ class index_dense_gt {
 
         // Cast the vector, if needed for compatibility with `metric_`
         thread_lock_t lock = thread_lock_(thread);
+        if (!lock)
+            return {};
         byte_t const* vector_data = reinterpret_cast<byte_t const*>(vector);
         {
             byte_t* casted_data = cast_buffer_.data() + metric_.bytes_per_vector() * lock.thread_id;
